@@ -1,0 +1,148 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videobook/view
+
+    Example context (json):
+    {
+        Aqui tem que criar o context em inglês
+    }
+}}
+{{!
+    Video Book student view.
+}}
+<div class="videobook" data-region="videobook" data-config="{{configjson}}">
+    <header class="videobook-header">
+        <div>
+            <h2 class="mb-1">{{name}}</h2>
+            <div class="text-muted">{{#str}}bookprogress, videobook{{/str}}: <strong
+                    data-region="book-percent">{{bookpercent}}%</strong></div>
+        </div>
+        <div class="videobook-header-actions">
+            {{#canmanage}}<a class="btn btn-outline-secondary" href="{{{manageurl}}}">{{#str}}
+                managechapters, videobook{{/str}}</a>{{/canmanage}}
+            {{#canreport}}<a class="btn btn-outline-secondary" href="{{{reporturl}}}">{{#str}}
+                viewreport, videobook{{/str}}</a>{{/canreport}}
+        </div>
+    </header>
+
+    {{#hasintro}}
+        <div class="videobook-intro">{{{intro}}}</div>{{/hasintro}}
+
+    <div class="videobook-layout">
+        <aside class="videobook-sidebar" aria-label="{{#str}}chapters, videobook{{/str}}">
+            <h3>{{#str}}chapters, videobook{{/str}}</h3>
+            <ol class="videobook-chapter-list">
+                {{#chapters}}
+                    <li class="videobook-chapter-item {{#current}}is-current{{/current}} {{#locked}}is-locked{{/locked}}">
+                        {{#locked}}
+                            <span class="videobook-chapter-link" aria-disabled="true">
+                                <span class="videobook-chapter-number">{{number}}</span>
+                                <span class="videobook-chapter-name">{{title}}</span>
+                                <span class="videobook-status">🔒 {{statustext}}</span>
+                            </span>
+                        {{/locked}}
+                        {{^locked}}
+                            <a class="videobook-chapter-link" href="{{{url}}}">
+                                <span class="videobook-chapter-number">{{number}}</span>
+                                <span class="videobook-chapter-name">{{title}}</span>
+                                <span class="videobook-status {{#statuscompleted}}is-complete{{/statuscompleted}}">{{statustext}}{{#statusinprogress}}
+                                    · {{percent}}%{{/statusinprogress}}</span>
+                            </a>
+                        {{/locked}}
+                    </li>
+                {{/chapters}}
+            </ol>
+        </aside>
+
+        <main class="videobook-main">
+            <div class="videobook-chapter-heading">
+                <div class="text-muted">{{chapterpositiontext}}</div>
+                <h3>{{chaptertitle}}</h3>
+                {{#hasvideo}}
+                    <div>{{#str}}chapterprogress, videobook{{/str}}: <strong
+                            data-region="chapter-percent">{{currentpercent}}%</strong></div>{{/hasvideo}}
+            </div>
+
+            {{#hasvideo}}
+                <div class="videobook-player-wrap">
+                    {{#html5}}
+                        <video class="videobook-player" data-region="html5-player" controls playsinline
+                               preload="metadata">
+                            <source src="{{{videourl}}}">
+                            {{#captions}}
+                                <track kind="subtitles" label="{{label}}" srclang="{{srclang}}"
+                                       src="{{{url}}}">{{/captions}}
+                        </video>
+                    {{/html5}}
+                    {{#youtube}}
+                        <div class="videobook-embed" data-region="youtube-player"></div>{{/youtube}}
+                    {{#vimeo}}
+                        <div class="videobook-embed" data-region="vimeo-player"></div>{{/vimeo}}
+                </div>
+            {{/hasvideo}}
+
+            {{#hasimage}}<img class="videobook-chapter-image" src="{{{imageurl}}}" alt="">{{/hasimage}}
+            {{#haschaptertext}}
+                <div class="videobook-content">{{{chaptertext}}}</div>{{/haschaptertext}}
+
+            {{#hasattachments}}
+                <section class="videobook-resources">
+                    <h4>{{#str}}attachments, videobook{{/str}}</h4>
+                    <ul>{{#attachments}}
+                        <li><a href="{{{url}}}">{{name}}</a></li>{{/attachments}}</ul>
+                </section>
+            {{/hasattachments}}
+
+            {{#haslinks}}
+                <section class="videobook-resources">
+                    <h4>{{#str}}complementarylinks, videobook{{/str}}</h4>
+                    <ul>{{#links}}
+                        <li><a href="{{{url}}}" target="_blank" rel="noopener noreferrer">{{displaylabel}}</a>
+                        </li>{{/links}}</ul>
+                </section>
+            {{/haslinks}}
+
+            {{#cancomplete}}
+                <button type="button" class="btn btn-primary" data-action="complete-text">{{#str}}
+                    markchaptercomplete, videobook{{/str}}</button>
+            {{/cancomplete}}
+            {{#currentcompleted}}
+                <div class="alert alert-success mt-3" data-region="completion-message">{{#str}}
+                    chaptercompleted, videobook{{/str}}</div>{{/currentcompleted}}
+            {{^currentcompleted}}
+                <div class="alert alert-success mt-3 d-none" data-region="completion-message">{{#str}}
+                    chaptercompleted, videobook{{/str}}</div>{{/currentcompleted}}
+            <div class="alert alert-warning mt-3 d-none" data-region="tracking-message" role="status"></div>
+
+            <nav class="videobook-prev-next" aria-label="{{#str}}chapternavigation, videobook{{/str}}">
+                <div>{{#hasprevious}}
+                    <a class="btn btn-outline-primary" href="{{{previousurl}}}">← {{#str}}
+                        previous, videobook{{/str}}</a>{{/hasprevious}}</div>
+                <div>
+                    {{#hasnext}}
+                        <a class="btn btn-primary" href="{{{nexturl}}}">{{#str}}
+                            next, videobook{{/str}} →</a>{{/hasnext}}
+                    {{#nextlocked}}
+                        <button type="button" class="btn btn-primary" disabled data-region="locked-next"
+                                data-next-url="{{{nextunlockurl}}}">{{#str}}nextlocked, videobook{{/str}} 🔒
+                        </button>{{/nextlocked}}
+                </div>
+            </nav>
+        </main>
+    </div>
+</div>

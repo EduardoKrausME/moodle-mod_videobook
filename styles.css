@@ -1,0 +1,172 @@
+.videobook-header,
+.videobook-chapter-heading,
+.videobook-prev-next {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.videobook-header {
+    margin-bottom: 1rem;
+}
+
+.videobook-header-actions,
+.videobook-actions {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.videobook-intro {
+    margin-bottom: 1.25rem;
+}
+
+.videobook-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.videobook-sidebar {
+    position: sticky;
+    top: 1rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .5rem;
+    padding: 1rem;
+    background: var(--bs-body-bg, #fff);
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.videobook-sidebar h3 {
+    font-size: 1.05rem;
+    margin-bottom: .75rem;
+}
+
+.videobook-chapter-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.videobook-chapter-item + .videobook-chapter-item {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.videobook-chapter-link {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: .125rem .5rem;
+    padding: .75rem .25rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.videobook-chapter-item.is-current .videobook-chapter-link {
+    font-weight: 600;
+}
+
+.videobook-chapter-item.is-locked {
+    opacity: .65;
+}
+
+.videobook-chapter-number {
+    grid-row: 1 / span 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: var(--bs-secondary-bg, #e9ecef);
+}
+
+.videobook-status {
+    font-size: .82rem;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+.videobook-status.is-complete,
+.videobook-report-state.is-complete {
+    font-weight: 600;
+}
+
+.videobook-main {
+    min-width: 0;
+}
+
+.videobook-chapter-heading {
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.videobook-player-wrap {
+    width: 100%;
+    margin-bottom: 1.25rem;
+}
+
+.videobook-player,
+.videobook-embed iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 0;
+}
+
+.videobook-embed {
+    width: 100%;
+}
+
+.videobook-chapter-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1rem auto;
+    border-radius: .4rem;
+}
+
+.videobook-content,
+.videobook-resources {
+    margin: 1.25rem 0;
+}
+
+.videobook-prev-next {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.videobook-report-table th,
+.videobook-report-table td {
+    min-width: 9rem;
+    vertical-align: middle;
+}
+
+.videobook-report-table th:first-child,
+.videobook-report-table td:first-child {
+    min-width: 14rem;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--bs-body-bg, #fff);
+}
+
+@media (max-width: 767.98px) {
+    .videobook-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .videobook-sidebar {
+        position: static;
+        max-height: none;
+    }
+
+    .videobook-header,
+    .videobook-chapter-heading,
+    .videobook-prev-next {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

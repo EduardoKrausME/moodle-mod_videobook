@@ -1,0 +1,75 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videobook/report
+
+    Example context (json):
+    {
+        Aqui tem que criar o context em inglês
+    }
+}}
+{{!
+    Video Book progress report.
+}}
+<div class="videobook-report">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div><h2 class="mb-0">{{#str}}reporttitle, videobook{{/str}}</h2>
+            <div class="text-muted">{{name}}</div>
+        </div>
+        <a class="btn btn-outline-secondary" href="{{{viewurl}}}">{{#str}}backtobook, videobook{{/str}}</a>
+    </div>
+    {{^haschapters}}
+        <div class="alert alert-info">{{#str}}nochaptersteacher, videobook{{/str}}</div>{{/haschapters}}
+    {{#haschapters}}
+        {{^hasrows}}
+            <div class="alert alert-info">{{#str}}nostudents, videobook{{/str}}</div>{{/hasrows}}
+        {{#hasrows}}
+            <div class="table-responsive videobook-report-table-wrap">
+                <table class="table table-bordered table-hover align-middle videobook-report-table">
+                    <thead>
+                    <tr>
+                        <th>{{#str}}student, videobook{{/str}}</th>{{#chapterheaders}}
+                        <th title="{{title}}">{{number}}. {{title}}</th>{{/chapterheaders}}
+                        <th>{{#str}}overall, videobook{{/str}}</th>
+                        <th>{{#str}}lastaccess, videobook{{/str}}</th>{{#canreset}}
+                        <th>{{#str}}actions, videobook{{/str}}</th>{{/canreset}}</tr>
+                    </thead>
+                    <tbody>
+                    {{#rows}}
+                        <tr>
+                            <td><strong>{{fullname}}</strong>
+                                <div class="small text-muted">{{email}}</div>
+                            </td>
+                            {{#chapters}}
+                                <td><span
+                                        class="videobook-report-state {{#statuscompleted}}is-complete{{/statuscompleted}}">{{statustext}}</span>{{#hasvideo}}
+                                    <div class="small">{{percent}}%</div>{{/hasvideo}}</td>{{/chapters}}
+                            <td><strong>{{overallpercent}}%</strong>
+                                <div class="small text-muted">{{completed}}/{{chaptercount}}</div>
+                            </td>
+                            <td>{{lastaccess}}</td>
+                            {{#canreset}}
+                                <td><a class="btn btn-sm btn-outline-danger" href="{{{reseturl}}}">{{#str}}
+                                    resetprogress, videobook{{/str}}</a></td>{{/canreset}}
+                        </tr>
+                    {{/rows}}
+                    </tbody>
+                </table>
+            </div>
+        {{/hasrows}}
+    {{/haschapters}}
+</div>
