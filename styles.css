@@ -170,3 +170,11 @@
         flex-direction: column;
     }
 }
+/* Provider APIs may replace the placeholder itself, so size a generated direct iframe as well. */
+.videobook-player-wrap > iframe {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border: 0;
+}
