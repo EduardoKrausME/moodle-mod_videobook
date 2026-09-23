@@ -112,7 +112,7 @@ class progress_manager {
      * @throws \dml_exception
      */
     public function update_video_progress(stdClass $activity, stdClass $chapter, int $userid, float $duration,
-                                          float    $currentposition, float $segmentstart, float $segmentend): stdClass {
+                                          float $currentposition, float $segmentstart, float $segmentend): stdClass {
         global $DB;
         $record = $this->touch((int)$activity->id, (int)$chapter->id, $userid);
         $duration = max((float)$record->duration, min(86400, max(0, $duration)));
