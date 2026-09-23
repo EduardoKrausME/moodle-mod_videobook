@@ -66,7 +66,6 @@ class chapter_form extends moodleform {
 
         $mform->addElement('filemanager', 'videofile', get_string('videofile', 'videobook'), null, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['.mp4', '.webm', '.ogv', '.m4v', '.mov', '.m3u8'],
         ]);
         $mform->hideIf('videofile', 'videosource', 'neq', 'upload');
@@ -90,10 +89,9 @@ class chapter_form extends moodleform {
         ]);
         $mform->hideIf('captions', 'videosource', 'in', ['none', 'youtube', 'vimeo']);
 
-        $mform->addElement('header', 'resourcesheader', get_string('resourcesheader', 'videobook'));
+        $mform->addElement('html', '<h3>' . get_string('resourcesheader', 'videobook') . '</h3>');
         $mform->addElement('filemanager', 'chapterimage', get_string('chapterimage', 'videobook'), null, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['image'],
         ]);
         $mform->addElement('filemanager', 'attachments', get_string('attachments', 'videobook'), null, [
@@ -134,6 +132,15 @@ class chapter_form extends moodleform {
             $minimumpercent = (int)($data['minimumpercent'] ?? 0);
             if ($minimumpercent < 1 || $minimumpercent > 100) {
                 $errors['minimumpercent'] = get_string('invalidpercentage', 'videobook');
+            }
+        }
+        foreach (['videofile', 'chapterimage'] as $field) {
+            $draftid = (int)($data[$field] ?? 0);
+            if ($draftid > 0) {
+                $draftinfo = file_get_draft_area_info($draftid);
+                if ((int)$draftinfo['filecount'] > 1) {
+                    $errors[$field] = get_string('errormaxfiles', 'videobook');
+                }
             }
         }
         return $errors;

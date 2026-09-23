@@ -45,7 +45,7 @@ class mod_videobook_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
         $this->standard_intro_elements();
 
-        $mform->addElement('header', 'navigationheader', get_string('navigationheader', 'videobook'));
+        $mform->addElement('html', '<h3>' . get_string('navigationheader', 'videobook') . '</h3>');
         $mform->addElement('select', 'navigationmode', get_string('navigationmode', 'videobook'), [
             0 => get_string('navigationfree', 'videobook'),
             1 => get_string('navigationsequential', 'videobook'),
