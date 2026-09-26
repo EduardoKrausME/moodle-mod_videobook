@@ -402,8 +402,8 @@ class chapter_manager {
     private function save_files(stdClass $chapter, context_module $context, stdClass $submitted): void {
         global $DB;
         if (isset($submitted->content_editor)) {
-            // file_postupdate_standard_editor() expects the *_editor data on the
-            // same object it receives. The persisted chapter does not contain
+            // file_postupdate_standard_editor() expects the *_editor data on the...
+            // same object it receives. The persisted chapter does not contain...
             // content_editor, so copy the submitted editor data before processing it.
             $chapter->content_editor = $submitted->content_editor;
             $chapter = file_postupdate_standard_editor($chapter, 'content', [
