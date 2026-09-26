@@ -30,6 +30,11 @@ use mod_videobook\form\chapter_form;
 
 $cmid = required_param('cmid', PARAM_INT);
 $chapterid = optional_param('chapterid', 0, PARAM_INT);
+// moodleform does not preserve the current query string when its action is null.
+// On an edit POST, recover the chapter id from the form's hidden id field.
+if (!$chapterid) {
+    $chapterid = optional_param('id', 0, PARAM_INT);
+}
 $cm = get_coursemodule_from_id('videobook', $cmid, 0, false, MUST_EXIST);
 $course = get_course($cm->course);
 $activity = $DB->get_record('videobook', ['id' => $cm->instance], '*', MUST_EXIST);
@@ -63,11 +68,13 @@ if ($chapterid) {
 $chapter->cmid = $cm->id;
 $chapter->videobookid = $activity->id;
 
-$PAGE->set_url('/mod/videobook/chapter.php', ['cmid' => $cm->id] + ($chapterid ? ['chapterid' => $chapterid] : []));
+$formurl = new moodle_url('/mod/videobook/chapter.php',
+    ['cmid' => $cm->id] + ($chapterid ? ['chapterid' => $chapterid] : []));
+$PAGE->set_url($formurl);
 $PAGE->set_title($chapterid ? get_string('editchapter', 'videobook') : get_string('addchapter', 'videobook'));
 $PAGE->set_heading(format_string($course->fullname));
 
-$form = new chapter_form(null, ['context' => $context]);
+$form = new chapter_form($formurl, ['context' => $context]);
 $form->set_data($chapter);
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/mod/videobook/manage.php', ['id' => $cm->id]));
