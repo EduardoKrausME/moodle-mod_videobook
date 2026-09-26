@@ -58,6 +58,8 @@ class provider implements
             'percent' => 'privacy:metadata:progress:percent',
             'status' => 'privacy:metadata:progress:status',
             'lastaccess' => 'privacy:metadata:progress:lastaccess',
+            'lastheartbeat' => 'privacy:metadata:progress:lastaccess',
+            'lastclienttime' => 'privacy:metadata:progress:lastaccess',
         ], 'privacy:metadata:progress');
         return $collection;
     }
