@@ -100,9 +100,42 @@ final class progress_manager_test extends \advanced_testcase {
             101
         );
 
-        $this->assertLessThanOrEqual(8.5, (float)$progress->uniquewatched);
+        $this->assertLessThanOrEqual(5.5, (float)$progress->uniquewatched);
         $this->assertSame('ratecapped', $progress->trackingreason);
         $this->assertNotEquals(progress_manager::STATUS_COMPLETED, (int)$progress->status);
+    }
+
+    /**
+     * Repeated requests without server time passing cannot accumulate progress.
+     */
+    public function test_immediate_replays_do_not_accumulate_progress(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$activity, $chapter, $user] = $this->create_records();
+
+        $manager = new progress_manager();
+        $record = $manager->touch($activity->id, $chapter->id, $user->id);
+        $record->lastheartbeat = time();
+        $record->lastclienttime = 400;
+        $DB->update_record('videobook_progress', $record);
+
+        for ($sequence = 401; $sequence <= 410; $sequence++) {
+            $manager->update_video_progress(
+                $activity,
+                $chapter,
+                $user->id,
+                100.0,
+                60.0,
+                0.0,
+                60.0,
+                2.0,
+                $sequence
+            );
+        }
+
+        $record = $DB->get_record('videobook_progress', ['chapterid' => $chapter->id], '*', MUST_EXIST);
+        $this->assertLessThanOrEqual(2.5, (float)$record->uniquewatched);
     }
 
     /**
