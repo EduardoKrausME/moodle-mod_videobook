@@ -52,15 +52,23 @@ if ($chapterid) {
         'videobookid' => $activity->id,
         'cmid' => $cm->id,
         'title' => '',
+        'sectiontitle' => '',
+        'visible' => 1,
         'content' => '',
         'contentformat' => FORMAT_HTML,
+        'transcript' => '',
+        'transcriptformat' => FORMAT_HTML,
         'videosource' => 'none',
         'videourl' => '',
         'links' => '',
+        'completiontype' => 'manual',
+        'contentorder' => 'video_content_transcript_resources',
         'minimumpercent' => 80,
     ];
     $draftid = file_get_submitted_draft_itemid('content_editor');
     $chapter->content_editor = ['text' => '', 'format' => FORMAT_HTML, 'itemid' => $draftid];
+    $transcriptdraftid = file_get_submitted_draft_itemid('transcript_editor');
+    $chapter->transcript_editor = ['text' => '', 'format' => FORMAT_HTML, 'itemid' => $transcriptdraftid];
     foreach (['videofile', 'chapterimage', 'attachments', 'captions'] as $field) {
         $chapter->{$field} = file_get_submitted_draft_itemid($field);
     }

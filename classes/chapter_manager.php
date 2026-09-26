@@ -42,9 +42,13 @@ class chapter_manager {
      * @param int $videobookid Activity id.
      * @return stdClass[]
      */
-    public function get_chapters(int $videobookid): array {
+    public function get_chapters(int $videobookid, bool $includehidden = true): array {
         global $DB;
-        return array_values($DB->get_records('videobook_chapters', ['videobookid' => $videobookid], 'sortorder ASC, id ASC'));
+        $conditions = ['videobookid' => $videobookid];
+        if (!$includehidden) {
+            $conditions['visible'] = 1;
+        }
+        return array_values($DB->get_records('videobook_chapters', $conditions, 'sortorder ASC, id ASC'));
     }
 
     /**
@@ -70,6 +74,19 @@ class chapter_manager {
      * @return stdClass|null
      */
     public function choose_default_chapter(array $chapters, array $progress): ?stdClass {
+        $latest = null;
+        $latestaccess = 0;
+        foreach ($chapters as $chapter) {
+            $record = $progress[$chapter->id] ?? null;
+            if ($record && (int)$record->status === progress_manager::STATUS_INPROGRESS &&
+                    (int)$record->lastaccess >= $latestaccess) {
+                $latest = $chapter;
+                $latestaccess = (int)$record->lastaccess;
+            }
+        }
+        if ($latest) {
+            return $latest;
+        }
         foreach ($chapters as $chapter) {
             $state = $progress[$chapter->id]->status ?? progress_manager::STATUS_NOTSTARTED;
             if ((int)$state !== progress_manager::STATUS_COMPLETED) {
@@ -159,7 +176,8 @@ class chapter_manager {
         $transaction = $DB->start_delegated_transaction();
         $DB->delete_records('videobook_progress', ['chapterid' => $chapter->id]);
         $DB->delete_records('videobook_chapters', ['id' => $chapter->id]);
-        foreach (['video', 'image', 'attachments', 'captions', 'content'] as $area) {
+        (new resource_manager())->delete_chapter_resources((int)$chapter->id, $context);
+        foreach (['video', 'image', 'attachments', 'captions', 'content', 'transcript'] as $area) {
             get_file_storage()->delete_area_files($context->id, 'mod_videobook', $area, $chapter->id);
         }
         $transaction->allow_commit();
@@ -232,6 +250,11 @@ class chapter_manager {
             'noclean' => false,
             'context' => $context,
         ], $context, 'mod_videobook', 'content', $chapter->id);
+        $chapter = file_prepare_standard_editor($chapter, 'transcript', [
+            'maxfiles' => -1,
+            'noclean' => false,
+            'context' => $context,
+        ], $context, 'mod_videobook', 'transcript', $chapter->id);
 
         foreach ([
                      'videofile' => ['video', 1, ['.mp4', '.webm', '.ogv', '.m4v', '.mov', '.m3u8']],
@@ -316,19 +339,43 @@ class chapter_manager {
     public function get_resources(stdClass $chapter, context_module $context): array {
         $resources = [
             'imageurl' => $this->first_file_url($context, 'image', (int)$chapter->id),
-            'attachments' => [],
+            'materials' => [],
             'captions' => [],
-            'links' => $this->decode_links((string)$chapter->linksjson),
         ];
+        $resourcemanager = new resource_manager();
+        foreach ($resourcemanager->get_resources((int)$chapter->id) as $resource) {
+            $item = $resourcemanager->export_for_template($resource, $context);
+            if ($item) {
+                $resources['materials'][] = $item;
+            }
+        }
         foreach (get_file_storage()->get_area_files(
             $context->id, 'mod_videobook', 'attachments', $chapter->id, 'filename', false
         ) as $file) {
-            $resources['attachments'][] = [
-                'name' => $file->get_filename(),
+            $resources['materials'][] = [
+                'title' => $file->get_filename(),
+                'description' => '',
+                'hasdescription' => false,
+                'type' => 'other',
+                'typelabel' => get_string('legacyattachment', 'videobook'),
                 'url' => moodle_url::make_pluginfile_url(
                     $context->id, 'mod_videobook', 'attachments', $chapter->id,
                     $file->get_filepath(), $file->get_filename(), true
                 )->out(false),
+                'download' => true,
+                'external' => false,
+            ];
+        }
+        foreach ($this->decode_links((string)$chapter->linksjson) as $link) {
+            $resources['materials'][] = [
+                'title' => $link['label'] !== '' ? $link['label'] : $link['url'],
+                'description' => '',
+                'hasdescription' => false,
+                'type' => 'link',
+                'typelabel' => get_string('legacylink', 'videobook'),
+                'url' => $link['url'],
+                'download' => false,
+                'external' => true,
             ];
         }
         foreach (get_file_storage()->get_area_files(
@@ -370,6 +417,73 @@ class chapter_manager {
     }
 
     /**
+     * Format native transcript through Moodle File API and filters.
+     *
+     * @param stdClass $chapter Chapter.
+     * @param context_module $context Context.
+     * @return string
+     */
+    public function format_transcript(stdClass $chapter, context_module $context): string {
+        $content = file_rewrite_pluginfile_urls(
+            (string)$chapter->transcript,
+            'pluginfile.php',
+            $context->id,
+            'mod_videobook',
+            'transcript',
+            $chapter->id
+        );
+        return format_text($content, (int)$chapter->transcriptformat, ['context' => $context]);
+    }
+
+    /**
+     * Return chapter thumbnail URL.
+     *
+     * @param stdClass $chapter Chapter.
+     * @param context_module $context Context.
+     * @return string
+     */
+    public function get_chapter_image_url(stdClass $chapter, context_module $context): string {
+        return $this->first_file_url($context, 'image', (int)$chapter->id);
+    }
+
+    /**
+     * Search titles, section names, content and transcripts.
+     *
+     * @param int $videobookid Activity id.
+     * @param string $query Search query.
+     * @param bool $includehidden Include hidden chapters.
+     * @return stdClass[]
+     */
+    public function search_chapters(int $videobookid, string $query, bool $includehidden = false): array {
+        global $DB;
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+        $like = '%' . $DB->sql_like_escape($query) . '%';
+        $clauses = [
+            $DB->sql_like('title', ':title', false),
+            $DB->sql_like('sectiontitle', ':sectiontitle', false),
+            $DB->sql_like('content', ':content', false),
+            $DB->sql_like('transcript', ':transcript', false),
+        ];
+        $sql = 'SELECT * FROM {videobook_chapters}
+                 WHERE videobookid = :videobookid
+                   AND (' . implode(' OR ', $clauses) . ')';
+        if (!$includehidden) {
+            $sql .= ' AND visible = 1';
+        }
+        $sql .= ' ORDER BY sortorder ASC, id ASC';
+        return array_values($DB->get_records_sql($sql, [
+            'videobookid' => $videobookid,
+            'title' => $like,
+            'sectiontitle' => $like,
+            'content' => $like,
+            'transcript' => $like,
+        ]));
+    }
+
+    /**
      * Return first protected file URL for chapter area.
      *
      * @param context_module $context Context.
@@ -402,15 +516,21 @@ class chapter_manager {
     private function save_files(stdClass $chapter, context_module $context, stdClass $submitted): void {
         global $DB;
         if (isset($submitted->content_editor)) {
-            // File_postupdate_standard_editor() expects the *_editor data on the...
-            // same object it receives. The persisted chapter does not contain...
-            // content_editor, so copy the submitted editor data before processing it.
             $chapter->content_editor = $submitted->content_editor;
             $chapter = file_postupdate_standard_editor($chapter, 'content', [
                 'maxfiles' => -1,
                 'noclean' => false,
                 'context' => $context,
             ], $context, 'mod_videobook', 'content', $chapter->id);
+            $DB->update_record('videobook_chapters', $chapter);
+        }
+        if (isset($submitted->transcript_editor)) {
+            $chapter->transcript_editor = $submitted->transcript_editor;
+            $chapter = file_postupdate_standard_editor($chapter, 'transcript', [
+                'maxfiles' => -1,
+                'noclean' => false,
+                'context' => $context,
+            ], $context, 'mod_videobook', 'transcript', $chapter->id);
             $DB->update_record('videobook_chapters', $chapter);
         }
 
@@ -450,13 +570,26 @@ class chapter_manager {
         return (object)[
             'videobookid' => (int)$data->videobookid,
             'title' => clean_param((string)$data->title, PARAM_TEXT),
+            'sectiontitle' => clean_param((string)($data->sectiontitle ?? ''), PARAM_TEXT),
+            'visible' => empty($data->visible) ? 0 : 1,
             'content' => (string)($data->content_editor['text'] ?? $data->content ?? ''),
             'contentformat' => (int)($data->content_editor['format'] ?? $data->contentformat ?? FORMAT_HTML),
+            'transcript' => (string)($data->transcript_editor['text'] ?? $data->transcript ?? ''),
+            'transcriptformat' => (int)($data->transcript_editor['format'] ?? $data->transcriptformat ?? FORMAT_HTML),
             'videosource' => $source,
             'videourl' => in_array($source, ['url', 'youtube', 'vimeo'], true)
                 ? clean_param((string)($data->videourl ?? ''), PARAM_URL) : '',
             'linksjson' => json_encode($this->parse_links((string)($data->links ?? '')),
                 JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'completiontype' => in_array((string)($data->completiontype ?? ''), [
+                'view', 'percent', 'ended', 'manual', 'percent_or_manual',
+            ], true) ? (string)$data->completiontype : ($source === 'none' ? 'manual' : 'percent'),
+            'contentorder' => in_array((string)($data->contentorder ?? ''), [
+                'video_content_transcript_resources',
+                'video_resources_content_transcript',
+                'video_transcript_content_resources',
+                'content_video_transcript_resources',
+            ], true) ? (string)$data->contentorder : 'video_content_transcript_resources',
             'minimumpercent' => max(1, min(100, (int)($data->minimumpercent ?? 80))),
         ];
     }
@@ -583,6 +716,92 @@ class chapter_manager {
                 $fs->create_file_from_string($record, $content);
             }
             $file->delete();
+        }
+    }
+
+    /**
+     * Duplicate a chapter including its files and structured resources.
+     *
+     * @param stdClass $chapter Source chapter.
+     * @param context_module $context Context.
+     * @return int
+     */
+    public function duplicate(stdClass $chapter, context_module $context): int {
+        global $DB;
+        $oldid = (int)$chapter->id;
+        unset($chapter->id);
+        $chapter->title = get_string('copytitle', 'videobook', $chapter->title);
+        $chapter->sortorder = (int)$chapter->sortorder + 1;
+        $chapter->timecreated = time();
+        $chapter->timemodified = $chapter->timecreated;
+        $newid = (int)$DB->insert_record('videobook_chapters', $chapter);
+        foreach (['video', 'image', 'attachments', 'captions', 'content', 'transcript'] as $area) {
+            $this->copy_file_area($context, $area, $oldid, $newid);
+        }
+        (new resource_manager())->duplicate_for_chapter($oldid, $newid, $context);
+        $this->renumber((int)$chapter->videobookid);
+        return $newid;
+    }
+
+    /**
+     * Set chapter visibility.
+     *
+     * @param stdClass $chapter Chapter.
+     * @param bool $visible Visibility.
+     * @return void
+     */
+    public function set_visibility(stdClass $chapter, bool $visible): void {
+        global $DB;
+        $chapter->visible = $visible ? 1 : 0;
+        $chapter->timemodified = time();
+        $DB->update_record('videobook_chapters', $chapter);
+    }
+
+    /**
+     * Persist an explicit chapter order.
+     *
+     * @param int $videobookid Activity id.
+     * @param int[] $ids Ordered chapter ids.
+     * @return void
+     */
+    public function reorder(int $videobookid, array $ids): void {
+        global $DB;
+        $chapters = $this->get_chapters($videobookid, true);
+        $allowed = array_map(static fn(stdClass $chapter): int => (int)$chapter->id, $chapters);
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        if (count($ids) !== count($allowed) || array_diff($ids, $allowed) || array_diff($allowed, $ids)) {
+            throw new moodle_exception('invalidchapterorder', 'videobook');
+        }
+        $sort = 10;
+        foreach ($ids as $id) {
+            $DB->set_field('videobook_chapters', 'sortorder', $sort, [
+                'id' => $id,
+                'videobookid' => $videobookid,
+            ]);
+            $sort += 10;
+        }
+    }
+
+    /**
+     * Copy files in one File API area.
+     *
+     * @param context_module $context Context.
+     * @param string $area File area.
+     * @param int $oldid Source item id.
+     * @param int $newid Target item id.
+     * @return void
+     */
+    private function copy_file_area(context_module $context, string $area, int $oldid, int $newid): void {
+        $fs = get_file_storage();
+        foreach ($fs->get_area_files($context->id, 'mod_videobook', $area, $oldid, 'id', false) as $file) {
+            $fs->create_file_from_storedfile([
+                'contextid' => $context->id,
+                'component' => 'mod_videobook',
+                'filearea' => $area,
+                'itemid' => $newid,
+                'filepath' => $file->get_filepath(),
+                'filename' => $file->get_filename(),
+            ], $file);
         }
     }
 

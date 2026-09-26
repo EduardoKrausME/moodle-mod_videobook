@@ -179,8 +179,16 @@ class progress_manager {
         $record->segments = json_encode($segments, JSON_PRESERVE_ZERO_FRACTION);
         $record->uniquewatched = $unique;
         $record->percent = $percent;
-        $record->status = $percent + 0.0001 >= (int)$chapter->minimumpercent
-            ? self::STATUS_COMPLETED : self::STATUS_INPROGRESS;
+        $completiontype = (string)($chapter->completiontype ?? 'percent');
+        $completed = (int)$record->status === self::STATUS_COMPLETED;
+        if ($completiontype === 'view') {
+            $completed = true;
+        } else if ($completiontype === 'percent' || $completiontype === 'percent_or_manual') {
+            $completed = $completed || $percent + 0.0001 >= (int)$chapter->minimumpercent;
+        } else if ($completiontype === 'ended') {
+            $completed = $completed || $percent + 0.0001 >= 100;
+        }
+        $record->status = $completed ? self::STATUS_COMPLETED : self::STATUS_INPROGRESS;
         $record->lastheartbeat = $now;
         $record->lastclienttime = $clienttime;
         $record->timemodified = $now;
@@ -238,6 +246,23 @@ class progress_manager {
     }
 
     /**
+     * Apply the "opened" completion rule when a chapter is visited.
+     *
+     * @param stdClass $activity Activity.
+     * @param stdClass $chapter Chapter.
+     * @param int $userid User id.
+     * @return stdClass
+     */
+    public function visit_chapter(stdClass $activity, stdClass $chapter, int $userid): stdClass {
+        $record = $this->touch((int)$activity->id, (int)$chapter->id, $userid);
+        if ((string)($chapter->completiontype ?? '') === 'view' &&
+                (int)$record->status !== self::STATUS_COMPLETED) {
+            return $this->complete_text_chapter($activity, $chapter, $userid);
+        }
+        return $record;
+    }
+
+    /**
      * Calculate overall completed-chapter percentage.
      *
      * @param int $videobookid Activity id.
@@ -246,15 +271,20 @@ class progress_manager {
      */
     public function get_book_percent(int $videobookid, int $userid): float {
         global $DB;
-        $total = $DB->count_records('videobook_chapters', ['videobookid' => $videobookid]);
+        $total = $DB->count_records('videobook_chapters', ['videobookid' => $videobookid, 'visible' => 1]);
         if (!$total) {
             return 0.0;
         }
-        $completed = $DB->count_records('videobook_progress', [
-            'videobookid' => $videobookid,
-            'userid' => $userid,
-            'status' => self::STATUS_COMPLETED,
-        ]);
+        $completed = (int)$DB->get_field_sql(
+            'SELECT COUNT(1)
+               FROM {videobook_progress} p
+               JOIN {videobook_chapters} c ON c.id = p.chapterid
+              WHERE p.videobookid = :videobookid
+                AND p.userid = :userid
+                AND p.status = :status
+                AND c.visible = 1',
+            ['videobookid' => $videobookid, 'userid' => $userid, 'status' => self::STATUS_COMPLETED]
+        );
         return min(100, ($completed / $total) * 100);
     }
 
@@ -267,15 +297,20 @@ class progress_manager {
      */
     public function is_book_complete(int $videobookid, int $userid): bool {
         global $DB;
-        $total = $DB->count_records('videobook_chapters', ['videobookid' => $videobookid]);
+        $total = $DB->count_records('videobook_chapters', ['videobookid' => $videobookid, 'visible' => 1]);
         if ($total === 0) {
             return false;
         }
-        $completed = $DB->count_records('videobook_progress', [
-            'videobookid' => $videobookid,
-            'userid' => $userid,
-            'status' => self::STATUS_COMPLETED,
-        ]);
+        $completed = (int)$DB->get_field_sql(
+            'SELECT COUNT(1)
+               FROM {videobook_progress} p
+               JOIN {videobook_chapters} c ON c.id = p.chapterid
+              WHERE p.videobookid = :videobookid
+                AND p.userid = :userid
+                AND p.status = :status
+                AND c.visible = 1',
+            ['videobookid' => $videobookid, 'userid' => $userid, 'status' => self::STATUS_COMPLETED]
+        );
         return $completed >= $total;
     }
 

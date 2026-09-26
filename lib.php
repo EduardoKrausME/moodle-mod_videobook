@@ -100,6 +100,13 @@ function videobook_delete_instance(int $id): bool {
     }
 
     $transaction = $DB->start_delegated_transaction();
+    $chapterids = $DB->get_fieldset_select('videobook_chapters', 'id', 'videobookid = :videobookid', [
+        'videobookid' => $id,
+    ]);
+    if ($chapterids) {
+        list($insql, $inparams) = $DB->get_in_or_equal($chapterids);
+        $DB->delete_records_select('videobook_resources', "chapterid $insql", $inparams);
+    }
     $DB->delete_records('videobook_progress', ['videobookid' => $id]);
     $DB->delete_records('videobook_chapters', ['videobookid' => $id]);
     $DB->delete_records('videobook', ['id' => $id]);
@@ -123,7 +130,7 @@ function mod_videobook_pluginfile($course, $cm, $context, string $filearea, arra
                                   bool $forcedownload, array $options = []): bool {
     global $DB;
 
-    $allowedareas = ['video', 'image', 'attachments', 'captions', 'content'];
+    $allowedareas = ['video', 'image', 'attachments', 'captions', 'content', 'transcript', 'resource'];
     if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, $allowedareas, true)) {
         return false;
     }
@@ -132,7 +139,12 @@ function mod_videobook_pluginfile($course, $cm, $context, string $filearea, arra
     require_capability('mod/videobook:view', $context);
 
     $itemid = (int)array_shift($args);
-    $chapter = $DB->get_record('videobook_chapters', ['id' => $itemid], 'id,videobookid', MUST_EXIST);
+    if ($filearea === 'resource') {
+        $resource = $DB->get_record('videobook_resources', ['id' => $itemid], 'id,chapterid', MUST_EXIST);
+        $chapter = $DB->get_record('videobook_chapters', ['id' => $resource->chapterid], 'id,videobookid', MUST_EXIST);
+    } else {
+        $chapter = $DB->get_record('videobook_chapters', ['id' => $itemid], 'id,videobookid', MUST_EXIST);
+    }
     if ((int)$chapter->videobookid !== (int)$cm->instance) {
         return false;
     }
@@ -144,7 +156,7 @@ function mod_videobook_pluginfile($course, $cm, $context, string $filearea, arra
         return false;
     }
 
-    if ($filearea === 'attachments') {
+    if (in_array($filearea, ['attachments', 'resource'], true)) {
         $forcedownload = true;
     }
     send_stored_file($file, 0, 0, $forcedownload, $options);
@@ -165,6 +177,8 @@ function videobook_get_file_areas($course, $cm, $context): array {
         'attachments' => get_string('attachments', 'videobook'),
         'captions' => get_string('captions', 'videobook'),
         'content' => get_string('chaptertext', 'videobook'),
+        'transcript' => get_string('transcript', 'videobook'),
+        'resource' => get_string('structuredresources', 'videobook'),
     ];
 }
 

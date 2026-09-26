@@ -79,8 +79,8 @@ class complete_chapter extends external_api {
                 throw new \moodle_exception('chapterlocked', 'videobook');
             }
         }
-        if ($chapter->videosource !== 'none') {
-            throw new \moodle_exception('chapterhasvideo', 'videobook');
+        if (!in_array((string)($chapter->completiontype ?? ''), ['manual', 'percent_or_manual'], true)) {
+            throw new \moodle_exception('manualcompletiondisabled', 'videobook');
         }
         $manager = new progress_manager();
         $progress = $manager->complete_text_chapter($activity, $chapter, (int)$USER->id);
