@@ -29,5 +29,22 @@
  * @return bool
  */
 function xmldb_videobook_upgrade(int $oldversion): bool {
+
+    if ($oldversion < 2026092601) {
+        $table = new xmldb_table('videobook_progress');
+
+        $field = new xmldb_field('lastheartbeat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'lastaccess');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('lastclienttime', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'lastheartbeat');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092601, 'videobook');
+    }
+
     return true;
 }
