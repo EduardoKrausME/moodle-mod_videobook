@@ -1,0 +1,70 @@
+{{!
+    @template mod_videobook/resources
+
+    Manage structured chapter materials.
+
+    Example context (json):
+    {
+        "chaptertitle": "Introduction",
+        "hasresources": true,
+        "resources": [{
+            "title": "Slides",
+            "typelabel": "Slides",
+            "source": "Uploaded file",
+            "visible": true
+        }]
+    }
+}}
+<div class="videobook-resources-manage">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">{{#str}}manageresources, videobook{{/str}}</h2>
+            <div class="text-muted">{{chaptertitle}}</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="{{{backurl}}}">{{#str}}managechapters, videobook{{/str}}</a>
+            <a class="btn btn-primary" href="{{{addurl}}}">{{#str}}addresource, videobook{{/str}}</a>
+        </div>
+    </div>
+
+    {{#hasresources}}
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>{{#str}}resourcetitle, videobook{{/str}}</th>
+                        <th>{{#str}}resourcetype, videobook{{/str}}</th>
+                        <th>{{#str}}resourcesource, videobook{{/str}}</th>
+                        <th>{{#str}}chaptervisible, videobook{{/str}}</th>
+                        <th>{{#str}}actions, videobook{{/str}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#resources}}
+                    <tr>
+                        <td><strong>{{title}}</strong></td>
+                        <td>{{typelabel}}</td>
+                        <td>{{source}}</td>
+                        <td>
+                            {{#visible}}<span class="badge text-bg-success">{{#str}}show, videobook{{/str}}</span>{{/visible}}
+                            {{^visible}}<span class="badge text-bg-secondary">{{#str}}hide, videobook{{/str}}</span>{{/visible}}
+                        </td>
+                        <td class="videobook-actions">
+                            {{#canup}}<a class="btn btn-sm btn-outline-secondary" href="{{{upurl}}}"
+                                aria-label="{{#str}}moveup, videobook{{/str}}">↑</a>{{/canup}}
+                            {{#candown}}<a class="btn btn-sm btn-outline-secondary" href="{{{downurl}}}"
+                                aria-label="{{#str}}movedown, videobook{{/str}}">↓</a>{{/candown}}
+                            <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">{{#str}}edit, videobook{{/str}}</a>
+                            <a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}">{{#str}}delete, videobook{{/str}}</a>
+                        </td>
+                    </tr>
+                {{/resources}}
+                </tbody>
+            </table>
+        </div>
+    {{/hasresources}}
+
+    {{^hasresources}}
+        <div class="alert alert-info">{{#str}}resourcesheader, videobook{{/str}}: 0</div>
+    {{/hasresources}}
+</div>

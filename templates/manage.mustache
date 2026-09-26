@@ -1,74 +1,96 @@
 {{!
-    This file is part of Moodle - https://moodle.org/
-
-    Moodle is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Moodle is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-}}
-{{!
     @template mod_videobook/manage
+
+    Chapter management list with drag-and-drop ordering and complete lesson actions.
 
     Example context (json):
     {
-        Aqui tem que criar o context em inglês
+        "name": "Course videos",
+        "haschapters": true,
+        "chapters": [{
+            "id": 12,
+            "number": 1,
+            "title": "Introduction",
+            "source": "YouTube",
+            "completion": "Watch a percentage of the video (80%)",
+            "visible": true
+        }]
     }
 }}
-{{!
-    Chapter management list.
-}}
 <div class="videobook-manage">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <div><h2 class="mb-0">{{#str}}managechapters, videobook{{/str}}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">{{#str}}managechapters, videobook{{/str}}</h2>
             <div class="text-muted">{{name}}</div>
         </div>
-        <div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="{{{viewurl}}}">{{#str}}
-            backtobook, videobook{{/str}}</a><a class="btn btn-primary" href="{{{addurl}}}">{{#str}}
-            addchapter, videobook{{/str}}</a></div>
-    </div>
-    {{#haschapters}}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                <tr>
-                    <th>#</th>
-                    <th>{{#str}}chaptertitle, videobook{{/str}}</th>
-                    <th>{{#str}}videosource, videobook{{/str}}</th>
-                    <th>{{#str}}minimumpercent, videobook{{/str}}</th>
-                    <th>{{#str}}actions, videobook{{/str}}</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{#chapters}}
-                    <tr>
-                        <td>{{number}}</td>
-                        <td>{{title}}</td>
-                        <td>{{source}}</td>
-                        <td>{{minimumpercent}}</td>
-                        <td class="videobook-actions">
-                            {{#canup}}<a class="btn btn-sm btn-outline-secondary" href="{{{upurl}}}"
-                                         aria-label="{{#str}}moveup, videobook{{/str}}">↑</a>{{/canup}}
-                            {{#candown}}<a class="btn btn-sm btn-outline-secondary" href="{{{downurl}}}"
-                                           aria-label="{{#str}}movedown, videobook{{/str}}">↓</a>{{/candown}}
-                            <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">{{#str}}
-                                edit, videobook{{/str}}</a>
-                            <a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}">{{#str}}
-                                delete, videobook{{/str}}</a>
-                        </td>
-                    </tr>
-                {{/chapters}}
-                </tbody>
-            </table>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-outline-secondary" href="{{{viewurl}}}">{{#str}}backtobook, videobook{{/str}}</a>
+            <a class="btn btn-outline-primary" href="{{{importurl}}}">{{#str}}importchapters, videobook{{/str}}</a>
+            <a class="btn btn-primary" href="{{{addurl}}}">{{#str}}addchapter, videobook{{/str}}</a>
         </div>
+    </div>
+
+    {{#haschapters}}
+        <form action="{{{formurl}}}" method="post" data-region="chapter-order-form">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <div class="videobook-manage-toolbar mb-3">
+                <span class="text-muted">{{#str}}dragtoorder, videobook{{/str}}</span>
+                <button type="submit" class="btn btn-sm btn-primary">{{#str}}saveorder, videobook{{/str}}</button>
+            </div>
+            <ol class="videobook-manage-list" data-region="chapter-sortable">
+                {{#chapters}}
+                    <li class="videobook-manage-item {{#hidden}}is-hidden{{/hidden}}"
+                        draggable="true" data-chapter-id="{{id}}">
+                        <input type="hidden" name="chapterorder[]" value="{{id}}">
+                        <div class="videobook-drag-handle" title="{{#str}}dragtoorder, videobook{{/str}}"
+                             aria-hidden="true">⋮⋮</div>
+
+                        <div class="videobook-manage-thumbnail">
+                            {{#hasimage}}<img src="{{{imageurl}}}" alt="">{{/hasimage}}
+                            {{^hasimage}}<span>{{number}}</span>{{/hasimage}}
+                        </div>
+
+                        <div class="videobook-manage-content">
+                            {{#hassection}}<div class="videobook-manage-section">{{section}}</div>{{/hassection}}
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <strong>{{title}}</strong>
+                                {{#visible}}<span class="badge text-bg-success">{{#str}}show, videobook{{/str}}</span>{{/visible}}
+                                {{#hidden}}<span class="badge text-bg-secondary">{{#str}}hide, videobook{{/str}}</span>{{/hidden}}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                {{source}} · {{completion}} · {{#str}}materials, videobook{{/str}}: {{resourcecount}}
+                            </div>
+                        </div>
+
+                        <div class="videobook-manage-actions">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{{resourcesurl}}}">
+                                {{#str}}materials, videobook{{/str}}
+                            </a>
+                            <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">
+                                {{#str}}edit, videobook{{/str}}
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{{{duplicateurl}}}">
+                                {{#str}}duplicate, videobook{{/str}}
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{{{visibilityurl}}}">
+                                {{#visible}}{{#str}}hide, videobook{{/str}}{{/visible}}
+                                {{#hidden}}{{#str}}show, videobook{{/str}}{{/hidden}}
+                            </a>
+                            {{#canup}}<a class="btn btn-sm btn-outline-secondary" href="{{{upurl}}}"
+                                aria-label="{{#str}}moveup, videobook{{/str}}">↑</a>{{/canup}}
+                            {{#candown}}<a class="btn btn-sm btn-outline-secondary" href="{{{downurl}}}"
+                                aria-label="{{#str}}movedown, videobook{{/str}}">↓</a>{{/candown}}
+                            <a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}">
+                                {{#str}}delete, videobook{{/str}}
+                            </a>
+                        </div>
+                    </li>
+                {{/chapters}}
+            </ol>
+        </form>
     {{/haschapters}}
+
     {{^haschapters}}
-        <div class="alert alert-info">{{#str}}nochaptersteacher, videobook{{/str}}</div>{{/haschapters}}
+        <div class="alert alert-info">{{#str}}nochaptersteacher, videobook{{/str}}</div>
+    {{/haschapters}}
 </div>
