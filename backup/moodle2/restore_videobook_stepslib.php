@@ -35,6 +35,7 @@ class restore_videobook_activity_structure_step extends restore_activity_structu
         $paths = [
             new restore_path_element('videobook', '/activity/videobook'),
             new restore_path_element('videobook_chapter', '/activity/videobook/chapters/chapter'),
+            new restore_path_element('videobook_resource', '/activity/videobook/chapters/chapter/resources/resource'),
         ];
         if ($this->get_setting_value('userinfo')) {
             $paths[] = new restore_path_element('videobook_progress', '/activity/videobook/progresses/progress');
@@ -74,6 +75,21 @@ class restore_videobook_activity_structure_step extends restore_activity_structu
     }
 
     /**
+     * Restore one structured resource.
+     *
+     * @param array $data Backup data.
+     * @return void
+     */
+    protected function process_videobook_resource(array $data): void {
+        global $DB;
+        $data = (object)$data;
+        $oldid = $data->id;
+        $data->chapterid = $this->get_new_parentid('videobook_chapter');
+        $data->id = $DB->insert_record('videobook_resources', $data);
+        $this->set_mapping('videobook_resource', $oldid, $data->id, true);
+    }
+
+    /**
      * Restore one user progress row.
      *
      * @param array $data Backup data.
@@ -96,8 +112,9 @@ class restore_videobook_activity_structure_step extends restore_activity_structu
      * @return void Return value.
      */
     protected function after_execute(): void {
-        foreach (['video', 'image', 'attachments', 'captions', 'content'] as $filearea) {
+        foreach (['video', 'image', 'attachments', 'captions', 'content', 'transcript'] as $filearea) {
             $this->add_related_files('mod_videobook', $filearea, 'videobook_chapter');
         }
+        $this->add_related_files('mod_videobook', 'resource', 'videobook_resource');
     }
 }

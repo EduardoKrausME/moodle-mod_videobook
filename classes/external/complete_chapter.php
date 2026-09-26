@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * AJAX endpoint to complete text-only chapters.
+ * AJAX endpoint for manual chapter completion.
  *
  * @package   mod_videobook
  * @copyright 2026 Eduardo Kraus
@@ -32,7 +32,7 @@ use mod_videobook\chapter_manager;
 use mod_videobook\progress_manager;
 
 /**
- * Complete a chapter without video.
+ * Complete a chapter when manual completion is enabled.
  */
 class complete_chapter extends external_api {
     /**
@@ -72,9 +72,9 @@ class complete_chapter extends external_api {
         $chapter = $chaptermanager->get_chapter($params['chapterid'], (int)$activity->id);
         if (!empty($activity->navigationmode)) {
             $progressmanager = new progress_manager();
-            $chapters = $chaptermanager->get_chapters((int)$activity->id);
-            $userprogress = $progressmanager->get_user_progress((int)$activity->id, (int)$USER->id);
             $canmanage = has_capability('mod/videobook:managechapters', $context);
+            $chapters = $chaptermanager->get_chapters((int)$activity->id, $canmanage);
+            $userprogress = $progressmanager->get_user_progress((int)$activity->id, (int)$USER->id);
             if (!$chaptermanager->can_access($activity, $chapters, (int)$chapter->id, $userprogress, $canmanage)) {
                 throw new \moodle_exception('chapterlocked', 'videobook');
             }

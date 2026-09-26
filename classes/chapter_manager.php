@@ -175,8 +175,8 @@ class chapter_manager {
         global $DB;
         $transaction = $DB->start_delegated_transaction();
         $DB->delete_records('videobook_progress', ['chapterid' => $chapter->id]);
-        $DB->delete_records('videobook_chapters', ['id' => $chapter->id]);
         (new resource_manager())->delete_chapter_resources((int)$chapter->id, $context);
+        $DB->delete_records('videobook_chapters', ['id' => $chapter->id]);
         foreach (['video', 'image', 'attachments', 'captions', 'content', 'transcript'] as $area) {
             get_file_storage()->delete_area_files($context->id, 'mod_videobook', $area, $chapter->id);
         }

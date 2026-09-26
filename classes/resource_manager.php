@@ -231,7 +231,7 @@ class resource_manager {
         return [
             'id' => (int)$resource->id,
             'title' => format_string($resource->title),
-            'description' => s((string)$resource->description),
+            'description' => (string)$resource->description,
             'hasdescription' => trim((string)$resource->description) !== '',
             'type' => (string)$resource->type,
             'typelabel' => get_string('resourcetype:' . $resource->type, 'videobook'),

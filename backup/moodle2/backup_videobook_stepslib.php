@@ -35,13 +35,18 @@ class backup_videobook_activity_structure_step extends backup_activity_structure
         $userinfo = $this->get_setting_value('userinfo');
 
         $activity = new backup_nested_element('videobook', ['id'], [
-            'name', 'intro', 'introformat', 'navigationmode', 'resumeplayback', 'allowseek',
+            'name', 'intro', 'introformat', 'navigationmode', 'resumeplayback', 'allowseek', 'layoutmode',
             'completionallchapters', 'timecreated', 'timemodified',
         ]);
         $chapters = new backup_nested_element('chapters');
         $chapter = new backup_nested_element('chapter', ['id'], [
-            'title', 'content', 'contentformat', 'videosource', 'videourl', 'linksjson',
+            'title', 'content', 'contentformat', 'transcript', 'transcriptformat', 'sectiontitle',
+            'videosource', 'videourl', 'linksjson', 'completiontype', 'contentorder', 'visible',
             'minimumpercent', 'sortorder', 'timecreated', 'timemodified',
+        ]);
+        $resources = new backup_nested_element('resources');
+        $resource = new backup_nested_element('resource', ['id'], [
+            'title', 'type', 'source', 'description', 'url', 'sortorder', 'visible', 'timecreated', 'timemodified',
         ]);
         $progresses = new backup_nested_element('progresses');
         $progress = new backup_nested_element('progress', ['id'], [
@@ -51,19 +56,23 @@ class backup_videobook_activity_structure_step extends backup_activity_structure
 
         $activity->add_child($chapters);
         $chapters->add_child($chapter);
+        $chapter->add_child($resources);
+        $resources->add_child($resource);
         $activity->add_child($progresses);
         $progresses->add_child($progress);
 
         $activity->set_source_table('videobook', ['id' => backup::VAR_ACTIVITYID]);
         $chapter->set_source_table('videobook_chapters', ['videobookid' => backup::VAR_PARENTID]);
+        $resource->set_source_table('videobook_resources', ['chapterid' => backup::VAR_PARENTID]);
         if ($userinfo) {
             $progress->set_source_table('videobook_progress', ['videobookid' => backup::VAR_PARENTID]);
         }
 
         $progress->annotate_ids('user', 'userid');
-        foreach (['video', 'image', 'attachments', 'captions', 'content'] as $filearea) {
+        foreach (['video', 'image', 'attachments', 'captions', 'content', 'transcript'] as $filearea) {
             $chapter->annotate_files('mod_videobook', $filearea, 'id');
         }
+        $resource->annotate_files('mod_videobook', 'resource', 'id');
 
         return $this->prepare_activity_structure($activity);
     }
