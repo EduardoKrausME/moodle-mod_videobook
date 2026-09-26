@@ -60,7 +60,22 @@ foreach ($chapters as $index => $chapter) {
         default => get_string('completionpercent', 'videobook') . ' (' . (int)$chapter->minimumpercent . '%)',
     };
     $imageurl = $manager->get_chapter_image_url($chapter, $context);
-    $resourcecount = count($resourcemanager->get_resources((int)$chapter->id, true));
+    $resources = $resourcemanager->get_resources((int)$chapter->id, true);
+    $resourcecount = count($resources);
+    $resourceitems = [];
+    foreach ($resources as $resource) {
+        $resourceitems[] = [
+            'title' => format_string($resource->title),
+            'typelabel' => get_string('resourcetype:' . $resource->type, 'videobook'),
+            'visible' => !empty($resource->visible),
+            'hidden' => empty($resource->visible),
+            'editurl' => (new moodle_url('/mod/videobook/resource.php', [
+                'cmid' => $cm->id,
+                'chapterid' => $chapter->id,
+                'resourceid' => $resource->id,
+            ]))->out(false),
+        ];
+    }
 
     $rows[] = [
         'id' => (int)$chapter->id,
@@ -75,6 +90,8 @@ foreach ($chapters as $index => $chapter) {
         'imageurl' => $imageurl,
         'hasimage' => $imageurl !== '',
         'resourcecount' => $resourcecount,
+        'resources' => $resourceitems,
+        'hasresources' => !empty($resourceitems),
         'editurl' => (new moodle_url('/mod/videobook/chapter.php', [
             'cmid' => $cm->id, 'chapterid' => $chapter->id,
         ]))->out(false),
