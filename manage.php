@@ -91,7 +91,7 @@ foreach ($chapters as $index => $chapter) {
     ) as $file) {
         $resourceitems[] = [
             'title' => $file->get_filename(),
-            'typelabel' => get_string('legacyattachment', 'videobook'),
+            'typelabel' => "",
             'visible' => true,
             'hidden' => false,
             'editurl' => $chapterediturl,
@@ -107,7 +107,7 @@ foreach ($chapters as $index => $chapter) {
             $label = trim((string)($link['label'] ?? ''));
             $resourceitems[] = [
                 'title' => $label !== '' ? format_string($label) : clean_param((string)$link['url'], PARAM_URL),
-                'typelabel' => get_string('legacylink', 'videobook'),
+                'typelabel' => "",
                 'visible' => true,
                 'hidden' => false,
                 'editurl' => $chapterediturl,
