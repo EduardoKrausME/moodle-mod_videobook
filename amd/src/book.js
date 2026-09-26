@@ -360,6 +360,11 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
             this.queueKey = 'mod_videobook_queue_' + config.cmid;
             this.memoryQueue = [];
             this.storageAvailable = true;
+            this.finalFlushed = false;
+            this.clienttime = Math.max(
+                Math.floor(Date.now() / 1000),
+                Number(config.lastclienttime || 0)
+            );
         }
 
         initialise() {
@@ -368,6 +373,7 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 this.lastTime = this.player.getCurrentTime();
                 this.pendingStart = this.lastTime;
                 this.pendingEnd = this.lastTime;
+                this.flush('playing');
             });
             this.player.onTimeUpdate((current) => this.timeUpdate(Number(current)));
             this.player.onPause(() => {
@@ -385,7 +391,6 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 }
             });
             window.addEventListener('pagehide', () => this.flushFinal('closed'));
-            window.addEventListener('unload', () => this.flushFinal('closed'));
             window.addEventListener('online', () => this.drain());
             this.timer = window.setInterval(() => {
                 if (this.playing) {
@@ -445,7 +450,8 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 playbackrate: Number(this.player.getPlaybackRate() || 1),
                 segmentstart: Number(start || 0),
                 segmentend: Number(Math.max(start, end) || 0),
-                playerstate: state
+                playerstate: state,
+                clienttime: this.nextClientTime()
             });
             this.drain();
         }
@@ -467,9 +473,10 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
          * @param {String} state Player state.
          */
         flushFinal(state) {
-            if (!this.player) {
+            if (!this.player || this.finalFlushed) {
                 return;
             }
+            this.finalFlushed = true;
             const duration = Number(this.player.getDuration() || 0);
             if (!Number.isFinite(duration) || duration <= 0) {
                 return;
@@ -485,7 +492,8 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 playbackrate: Number(this.player.getPlaybackRate() || 1),
                 segmentstart: Number(start || 0),
                 segmentend: Number(Math.max(start, end) || 0),
-                playerstate: state
+                playerstate: state,
+                clienttime: this.nextClientTime()
             };
 
             this.pendingStart = null;
@@ -511,6 +519,13 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                     headers: {'Content-Type': 'application/json'},
                     body: body,
                     keepalive: true
+                }).then((response) => {
+                    if (response.ok) {
+                        this.removeQueued(payload);
+                    }
+                    return response;
+                }).catch(() => {
+                    // The queued payload will be retried on the next page load.
                 });
             } catch (error) {
                 // The queued payload will be retried on the next page load.
@@ -526,6 +541,11 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 return;
             }
             const pending = queue[0];
+            if (!Number(pending.clienttime)) {
+                pending.clienttime = this.nextClientTime();
+                queue[0] = pending;
+                this.writeQueue(queue);
+            }
             this.sending = true;
             Ajax.call([{
                 methodname: 'mod_videobook_update_progress',
@@ -543,6 +563,23 @@ define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (
                 this.sending = false;
                 this.showMessage('trackingerror');
             });
+        }
+
+        nextClientTime() {
+            const now = Math.floor(Date.now() / 1000);
+            this.clienttime = Math.max(now, this.clienttime + 1);
+            return this.clienttime;
+        }
+
+        removeQueued(payload) {
+            const queue = this.readQueue();
+            const index = queue.findIndex((item) =>
+                Number(item.chapterid) === Number(payload.chapterid) &&
+                Number(item.clienttime) === Number(payload.clienttime));
+            if (index !== -1) {
+                queue.splice(index, 1);
+                this.writeQueue(queue);
+            }
         }
 
         readQueue() {
