@@ -355,7 +355,7 @@ class chapter_manager {
                 'description' => '',
                 'hasdescription' => false,
                 'type' => 'other',
-                'typelabel' => get_string('legacyattachment', 'videobook'),
+                'typelabel' => get_string('resourcetype:complementary', 'videobook'),
                 'url' => moodle_url::make_pluginfile_url(
                     $context->id, 'mod_videobook', 'attachments', $chapter->id,
                     $file->get_filepath(), $file->get_filename(), true
@@ -370,7 +370,7 @@ class chapter_manager {
                 'description' => '',
                 'hasdescription' => false,
                 'type' => 'link',
-                'typelabel' => get_string('legacylink', 'videobook'),
+                'typelabel' => get_string('resourcetype:link', 'videobook'),
                 'url' => $link['url'],
                 'download' => false,
                 'external' => true,
