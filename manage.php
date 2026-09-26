@@ -61,7 +61,6 @@ foreach ($chapters as $index => $chapter) {
     };
     $imageurl = $manager->get_chapter_image_url($chapter, $context);
     $resources = $resourcemanager->get_resources((int)$chapter->id, true);
-    $resourcecount = count($resources);
     $resourceitems = [];
     foreach ($resources as $resource) {
         $resourceitems[] = [
@@ -76,6 +75,47 @@ foreach ($chapters as $index => $chapter) {
             ]))->out(false),
         ];
     }
+
+    $chapterediturl = (new moodle_url('/mod/videobook/chapter.php', [
+        'cmid' => $cm->id,
+        'chapterid' => $chapter->id,
+    ]))->out(false);
+
+    foreach (get_file_storage()->get_area_files(
+        $context->id,
+        'mod_videobook',
+        'attachments',
+        $chapter->id,
+        'filename',
+        false
+    ) as $file) {
+        $resourceitems[] = [
+            'title' => $file->get_filename(),
+            'typelabel' => get_string('legacyattachment', 'videobook'),
+            'visible' => true,
+            'hidden' => false,
+            'editurl' => $chapterediturl,
+        ];
+    }
+
+    $legacylinks = json_decode((string)$chapter->linksjson, true);
+    if (is_array($legacylinks)) {
+        foreach ($legacylinks as $link) {
+            if (!is_array($link) || empty($link['url'])) {
+                continue;
+            }
+            $label = trim((string)($link['label'] ?? ''));
+            $resourceitems[] = [
+                'title' => $label !== '' ? format_string($label) : clean_param((string)$link['url'], PARAM_URL),
+                'typelabel' => get_string('legacylink', 'videobook'),
+                'visible' => true,
+                'hidden' => false,
+                'editurl' => $chapterediturl,
+            ];
+        }
+    }
+
+    $resourcecount = count($resourceitems);
 
     $rows[] = [
         'id' => (int)$chapter->id,
