@@ -377,6 +377,8 @@ $data = [
     'continuepercent' => $currentpercent,
     'continueposition' => $currentprogress && (float)$currentprogress->lastposition > 0
         ? $formatseconds((float)$currentprogress->lastposition) : '',
+    'continuestoppedtext' => $currentprogress && (float)$currentprogress->lastposition > 0
+        ? get_string('stoppedat', 'videobook', $formatseconds((float)$currentprogress->lastposition)) : '',
     'hascontinueposition' => $currentprogress && (float)$currentprogress->lastposition > 0,
 ];
 

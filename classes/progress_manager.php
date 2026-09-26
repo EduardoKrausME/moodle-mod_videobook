@@ -186,7 +186,9 @@ class progress_manager {
         } else if ($completiontype === 'percent' || $completiontype === 'percent_or_manual') {
             $completed = $completed || $percent + 0.0001 >= (int)$chapter->minimumpercent;
         } else if ($completiontype === 'ended') {
-            $completed = $completed || $percent + 0.0001 >= 100;
+            // Browsers and providers rarely report the final fraction of a second
+            // with perfect precision, so accept a tiny end-of-media tolerance.
+            $completed = $completed || $percent >= 99.5;
         }
         $record->status = $completed ? self::STATUS_COMPLETED : self::STATUS_INPROGRESS;
         $record->lastheartbeat = $now;
