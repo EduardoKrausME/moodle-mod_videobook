@@ -5,6 +5,14 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Student view for Video Book.
@@ -226,7 +234,7 @@ $hascontentpanel = $haschaptertext || $hasimage;
 $chaptertext = $haschaptertext ? $chaptermanager->format_content($current, $context) : '';
 $transcript = $hastranscript ? $chaptermanager->format_transcript($current, $context) : '';
 
-$videoBlock = [
+$videoblock = [
     'isvideo' => true,
     'hasvideo' => $hasvideo,
     'html5' => $player['type'] === 'html5',
@@ -235,7 +243,7 @@ $videoBlock = [
     'videourl' => $player['url'] ?? '',
     'captions' => $resources['captions'],
 ];
-$contentBlock = [
+$contentblock = [
     'iscontent' => true,
     'hascontent' => $hascontentpanel,
     'haschaptertext' => $haschaptertext,
@@ -243,22 +251,22 @@ $contentBlock = [
     'hasimage' => $hasimage,
     'imageurl' => $resources['imageurl'],
 ];
-$transcriptBlock = [
+$transcriptblock = [
     'istranscript' => true,
     'hastranscript' => $hastranscript,
     'transcript' => $transcript,
 ];
-$materialsBlock = [
+$materialsblock = [
     'ismaterials' => true,
     'hasmaterials' => $hasmaterials,
     'materials' => $resources['materials'],
 ];
 
 $blockmap = [
-    'video' => $videoBlock,
-    'content' => $contentBlock,
-    'transcript' => $transcriptBlock,
-    'resources' => $materialsBlock,
+    'video' => $videoblock,
+    'content' => $contentblock,
+    'transcript' => $transcriptblock,
+    'resources' => $materialsblock,
 ];
 $blocks = [];
 foreach (explode('_', (string)($current->contentorder ?? 'video_content_transcript_resources')) as $token) {
