@@ -60,6 +60,28 @@
                             <div class="small text-muted mt-1">
                                 {{source}} · {{completion}} · {{#str}}materials, videobook{{/str}}: {{resourcecount}}
                             </div>
+
+                            {{#hasresources}}
+                                <div class="videobook-manage-materials">
+                                    <div class="videobook-manage-materials-title">
+                                        {{#str}}materials, videobook{{/str}}
+                                    </div>
+                                    <div class="videobook-manage-material-list">
+                                        {{#resources}}
+                                            <a class="videobook-manage-material {{#hidden}}is-hidden{{/hidden}}"
+                                               href="{{{editurl}}}">
+                                                <span class="videobook-manage-material-title">{{title}}</span>
+                                                <span class="videobook-manage-material-type">{{typelabel}}</span>
+                                                {{#hidden}}
+                                                    <span class="badge text-bg-secondary">
+                                                        {{#str}}hide, videobook{{/str}}
+                                                    </span>
+                                                {{/hidden}}
+                                            </a>
+                                        {{/resources}}
+                                    </div>
+                                </div>
+                            {{/hasresources}}
                         </div>
 
                         <div class="videobook-manage-actions">
