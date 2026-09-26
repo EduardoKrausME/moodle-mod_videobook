@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_videobook\chapter_manager;
 use mod_videobook\progress_manager;
 
 /**
@@ -60,7 +61,7 @@ function videobook_supports($feature) {
  * @return int
  */
 function videobook_add_instance(stdClass $data, ?mod_videobook_mod_form $mform = null): int {
-    global $DB;
+    global $DB, $USER;
     $data->timecreated = time();
     $data->timemodified = $data->timecreated;
     return $DB->insert_record('videobook', $data);
@@ -140,13 +141,35 @@ function mod_videobook_pluginfile($course, $cm, $context, string $filearea, arra
 
     $itemid = (int)array_shift($args);
     if ($filearea === 'resource') {
-        $resource = $DB->get_record('videobook_resources', ['id' => $itemid], 'id,chapterid', MUST_EXIST);
-        $chapter = $DB->get_record('videobook_chapters', ['id' => $resource->chapterid], 'id,videobookid', MUST_EXIST);
+        $resource = $DB->get_record('videobook_resources', ['id' => $itemid], 'id,chapterid,visible', MUST_EXIST);
+        $chapter = $DB->get_record('videobook_chapters', ['id' => $resource->chapterid],
+            'id,videobookid,visible', MUST_EXIST);
     } else {
-        $chapter = $DB->get_record('videobook_chapters', ['id' => $itemid], 'id,videobookid', MUST_EXIST);
+        $resource = null;
+        $chapter = $DB->get_record('videobook_chapters', ['id' => $itemid],
+            'id,videobookid,visible', MUST_EXIST);
     }
     if ((int)$chapter->videobookid !== (int)$cm->instance) {
         return false;
+    }
+
+    $canmanage = has_capability('mod/videobook:managechapters', $context);
+    if ((empty($chapter->visible) || ($resource && empty($resource->visible))) && !$canmanage) {
+        return false;
+    }
+
+    if (!$canmanage) {
+        $activity = $DB->get_record('videobook', ['id' => $cm->instance], '*', MUST_EXIST);
+        if (!empty($activity->navigationmode)) {
+            $chaptermanager = new chapter_manager();
+            $chapters = $chaptermanager->get_chapters((int)$activity->id, false);
+            $progress = isguestuser()
+                ? []
+                : (new progress_manager())->get_user_progress((int)$activity->id, (int)$USER->id);
+            if (!$chaptermanager->can_access($activity, $chapters, (int)$chapter->id, $progress, false)) {
+                return false;
+            }
+        }
     }
 
     $filename = array_pop($args);

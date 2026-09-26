@@ -95,9 +95,12 @@ class update_progress extends external_api {
         $activity = $DB->get_record('videobook', ['id' => $cm->instance], '*', MUST_EXIST);
         $chaptermanager = new chapter_manager();
         $chapter = $chaptermanager->get_chapter($params['chapterid'], (int)$activity->id);
+        $canmanage = has_capability('mod/videobook:managechapters', $context);
+        if (empty($chapter->visible) && !$canmanage) {
+            throw new \moodle_exception('invalidchapter', 'videobook');
+        }
         if (!empty($activity->navigationmode)) {
             $progressmanager = new progress_manager();
-            $canmanage = has_capability('mod/videobook:managechapters', $context);
             $chapters = $chaptermanager->get_chapters((int)$activity->id, $canmanage);
             $userprogress = $progressmanager->get_user_progress((int)$activity->id, (int)$USER->id);
             if (!$chaptermanager->can_access($activity, $chapters, (int)$chapter->id, $userprogress, $canmanage)) {
