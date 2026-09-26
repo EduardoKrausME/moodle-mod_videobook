@@ -69,7 +69,8 @@ class resource_form extends moodleform {
         $mform->setDefault('source', 'file');
 
         $mform->addElement('filemanager', 'resourcefile', get_string('resourcefile', 'videobook'), null, [
-            'subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['*'],
+            'subdirs' => 0,
+            'accepted_types' => ['*'],
         ]);
         $mform->hideIf('resourcefile', 'source', 'neq', 'file');
 

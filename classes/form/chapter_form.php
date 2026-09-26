@@ -57,13 +57,11 @@ class chapter_form extends moodleform {
         $mform->setDefault('visible', 1);
 
         $mform->addElement('editor', 'content_editor', get_string('chaptertext', 'videobook'), null, [
-            'maxfiles' => -1,
             'noclean' => false,
             'context' => $context,
         ]);
 
         $mform->addElement('editor', 'transcript_editor', get_string('transcript', 'videobook'), null, [
-            'maxfiles' => -1,
             'noclean' => false,
             'context' => $context,
         ]);
@@ -128,7 +126,6 @@ class chapter_form extends moodleform {
         ]);
         $mform->addElement('filemanager', 'attachments', get_string('attachments', 'videobook'), null, [
             'subdirs' => 0,
-            'maxfiles' => -1,
             'accepted_types' => ['*'],
         ]);
         $mform->addElement('textarea', 'links', get_string('complementarylinks', 'videobook'), [

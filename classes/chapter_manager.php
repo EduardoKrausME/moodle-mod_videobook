@@ -246,12 +246,10 @@ class chapter_manager {
      */
     public function prepare_form_data(stdClass $chapter, context_module $context): stdClass {
         $chapter = file_prepare_standard_editor($chapter, 'content', [
-            'maxfiles' => -1,
             'noclean' => false,
             'context' => $context,
         ], $context, 'mod_videobook', 'content', $chapter->id);
         $chapter = file_prepare_standard_editor($chapter, 'transcript', [
-            'maxfiles' => -1,
             'noclean' => false,
             'context' => $context,
         ], $context, 'mod_videobook', 'transcript', $chapter->id);
@@ -518,7 +516,6 @@ class chapter_manager {
         if (isset($submitted->content_editor)) {
             $chapter->content_editor = $submitted->content_editor;
             $chapter = file_postupdate_standard_editor($chapter, 'content', [
-                'maxfiles' => -1,
                 'noclean' => false,
                 'context' => $context,
             ], $context, 'mod_videobook', 'content', $chapter->id);
@@ -527,7 +524,6 @@ class chapter_manager {
         if (isset($submitted->transcript_editor)) {
             $chapter->transcript_editor = $submitted->transcript_editor;
             $chapter = file_postupdate_standard_editor($chapter, 'transcript', [
-                'maxfiles' => -1,
                 'noclean' => false,
                 'context' => $context,
             ], $context, 'mod_videobook', 'transcript', $chapter->id);

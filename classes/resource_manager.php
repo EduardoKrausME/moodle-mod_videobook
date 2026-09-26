@@ -77,7 +77,6 @@ class resource_manager {
         $draftid = file_get_submitted_draft_itemid('resourcefile');
         file_prepare_draft_area($draftid, $context->id, 'mod_videobook', 'resource', $resource->id, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['*'],
         ]);
         $resource->resourcefile = $draftid;
@@ -308,7 +307,6 @@ class resource_manager {
         }
         file_save_draft_area_files($submitted->resourcefile, $context->id, 'mod_videobook', 'resource', $resource->id, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['*'],
         ]);
     }
