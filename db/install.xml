@@ -33,7 +33,7 @@
                 <FIELD NAME="contentformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
                 <FIELD NAME="transcript" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
                 <FIELD NAME="transcriptformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
-                <FIELD NAME="sectiontitle" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+                <FIELD NAME="sectiontitle" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="videosource" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="none" SEQUENCE="false"/>
                 <FIELD NAME="videourl" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
                 <FIELD NAME="linksjson" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
