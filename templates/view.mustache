@@ -57,12 +57,12 @@
                             </span>
                         {{/locked}}
                         {{^locked}}
-                            <a class="videobook-chapter-link" href="{{{url}}}">
+                            <div class="videobook-chapter-link">
                                 <span class="videobook-chapter-number">{{number}}</span>
-                                <span class="videobook-chapter-name">{{title}}</span>
+                                <a class="videobook-chapter-name" href="{{{url}}}">{{title}}</a>
                                 <span class="videobook-status {{#statuscompleted}}is-complete{{/statuscompleted}}">{{statustext}}{{#statusinprogress}}
                                     · {{percent}}%{{/statusinprogress}}</span>
-                            </a>
+                            </div>
                         {{/locked}}
                     </li>
                 {{/chapters}}
