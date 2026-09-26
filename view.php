@@ -157,6 +157,7 @@ $playerconfig = $player + [
         'allowseek' => (bool)$activity->allowseek,
         'lastposition' => $currentprogress ? (float)$currentprogress->lastposition : 0,
         'segments' => $currentprogress ? json_decode((string)$currentprogress->segments, true) : [],
+        'lastclienttime' => $currentprogress ? (int)($currentprogress->lastclienttime ?? 0) : 0,
         'tracked' => $istracked,
     ];
 
