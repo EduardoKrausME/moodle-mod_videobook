@@ -22,8 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['core/ajax', 'core/notification', 'core/str'], function (Ajax, Notification, Str) {
-    const HEARTBEAT_SECONDS = 10;
+define(['core/ajax', 'core/config', 'core/notification', 'core/str'], function (Ajax, Config, Notification, Str) {
+    const HEARTBEAT_SECONDS = 60;
     let youtubePromise;
     let vimeoPromise;
 
@@ -384,7 +384,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function (Ajax, Notificat
                     this.flush('hidden');
                 }
             });
-            window.addEventListener('pagehide', () => this.flush('closed'));
+            window.addEventListener('pagehide', () => this.flushFinal('closed'));
+            window.addEventListener('unload', () => this.flushFinal('closed'));
             window.addEventListener('online', () => this.drain());
             this.timer = window.setInterval(() => {
                 if (this.playing) {
@@ -453,6 +454,67 @@ define(['core/ajax', 'core/notification', 'core/str'], function (Ajax, Notificat
             const queue = this.readQueue();
             queue.push(payload);
             this.writeQueue(queue);
+        }
+
+        /**
+         * Persist and send the last watched interval while the page is being closed.
+         *
+         * The payload is kept in the local queue as a fallback. The request uses
+         * fetch keepalive so the browser may complete it after page teardown. A
+         * repeated payload is harmless because watched intervals are merged by
+         * the server.
+         *
+         * @param {String} state Player state.
+         */
+        flushFinal(state) {
+            if (!this.player) {
+                return;
+            }
+            const duration = Number(this.player.getDuration() || 0);
+            if (!Number.isFinite(duration) || duration <= 0) {
+                return;
+            }
+            const current = Number(this.player.getCurrentTime() || 0);
+            const start = this.pendingStart === null ? current : this.pendingStart;
+            const end = this.pendingEnd === null ? start : this.pendingEnd;
+            const payload = {
+                cmid: Number(this.config.cmid),
+                chapterid: Number(this.config.chapterid),
+                currentposition: current,
+                duration: duration,
+                playbackrate: Number(this.player.getPlaybackRate() || 1),
+                segmentstart: Number(start || 0),
+                segmentend: Number(Math.max(start, end) || 0),
+                playerstate: state
+            };
+
+            this.pendingStart = null;
+            this.pendingEnd = null;
+            this.enqueue(payload);
+
+            if (!window.fetch || !Config.wwwroot || !Config.sesskey) {
+                return;
+            }
+
+            const url = Config.wwwroot + '/lib/ajax/service.php?sesskey=' +
+                encodeURIComponent(Config.sesskey) + '&info=mod_videobook_update_progress';
+            const body = JSON.stringify([{
+                index: 0,
+                methodname: 'mod_videobook_update_progress',
+                args: payload
+            }]);
+
+            try {
+                window.fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/json'},
+                    body: body,
+                    keepalive: true
+                });
+            } catch (error) {
+                // The queued payload will be retried on the next page load.
+            }
         }
 
         drain() {
