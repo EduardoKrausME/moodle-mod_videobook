@@ -84,7 +84,6 @@ class chapter_form extends moodleform {
 
         $mform->addElement('filemanager', 'captions', get_string('captions', 'videobook'), null, [
             'subdirs' => 0,
-            'maxfiles' => 10,
             'accepted_types' => ['.vtt', '.srt'],
         ]);
         $mform->hideIf('captions', 'videosource', 'in', ['none', 'youtube', 'vimeo']);
