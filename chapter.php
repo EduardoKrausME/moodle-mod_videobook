@@ -30,7 +30,7 @@ use mod_videobook\form\chapter_form;
 
 $cmid = required_param('cmid', PARAM_INT);
 $chapterid = optional_param('chapterid', 0, PARAM_INT);
-// moodleform does not preserve the current query string when its action is null.
+// Moodleform does not preserve the current query string when its action is null.
 // On an edit POST, recover the chapter id from the form's hidden id field.
 if (!$chapterid) {
     $chapterid = optional_param('id', 0, PARAM_INT);
