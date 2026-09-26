@@ -50,6 +50,7 @@ class update_progress extends external_api {
             'segmentstart' => new external_value(PARAM_FLOAT, get_string('ws:segmentstart', 'videobook')),
             'segmentend' => new external_value(PARAM_FLOAT, get_string('ws:segmentend', 'videobook')),
             'playerstate' => new external_value(PARAM_ALPHANUMEXT, get_string('ws:playerstate', 'videobook')),
+            'clienttime' => new external_value(PARAM_INT, 'Monotonic client event time.'),
         ]);
     }
 
@@ -64,10 +65,12 @@ class update_progress extends external_api {
      * @param float $segmentstart Segment start.
      * @param float $segmentend Segment end.
      * @param string $playerstate Player state.
+     * @param int $clienttime Monotonic client event time.
      * @return array
      */
     public static function execute(int $cmid, int $chapterid, float $currentposition, float $duration,
-                                   float $playbackrate, float $segmentstart, float $segmentend, string $playerstate): array {
+                                   float $playbackrate, float $segmentstart, float $segmentend, string $playerstate,
+                                   int $clienttime): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
@@ -79,6 +82,7 @@ class update_progress extends external_api {
             'segmentstart' => $segmentstart,
             'segmentend' => $segmentend,
             'playerstate' => $playerstate,
+            'clienttime' => $clienttime,
         ]);
 
         $cm = get_coursemodule_from_id('videobook', $params['cmid'], 0, false, MUST_EXIST);
@@ -105,7 +109,8 @@ class update_progress extends external_api {
         }
 
         $manager = new progress_manager();
-        $previous = $manager->touch((int)$activity->id, (int)$chapter->id, (int)$USER->id);
+        $previous = $manager->get_user_progress((int)$activity->id, (int)$USER->id)[(int)$chapter->id]
+            ?? $manager->touch((int)$activity->id, (int)$chapter->id, (int)$USER->id);
         $correctposition = (float)$params['currentposition'];
         $reason = 'accepted';
         if (empty($activity->allowseek)) {
@@ -125,8 +130,14 @@ class update_progress extends external_api {
             (float)$params['duration'],
             $correctposition,
             (float)$params['segmentstart'],
-            (float)$params['segmentend']
+            (float)$params['segmentend'],
+            (float)$params['playbackrate'],
+            (int)$params['clienttime']
         );
+
+        if ($reason === 'accepted' && !empty($progress->trackingreason)) {
+            $reason = $progress->trackingreason;
+        }
 
         return [
             'accepted' => true,
