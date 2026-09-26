@@ -152,10 +152,10 @@ class progress_manager {
         // Progress is bounded by server wall-clock time. A modified browser may report
         // arbitrary media positions, but it cannot manufacture minutes of watched
         // content in a few seconds by repeatedly calling the web service.
-        $rate = min(4.0, max(0.25, $playbackrate));
+        $rate = min(2.0, max(0.25, $playbackrate));
         $reference = !empty($record->lastheartbeat) ? (int)$record->lastheartbeat : (int)$record->timecreated;
         $elapsed = max(0, min(90, $now - $reference));
-        $allowedlength = min(60.0, ($elapsed * $rate) + 3.0);
+        $allowedlength = min(60.0, $elapsed * $rate);
         $trackingreason = 'accepted';
         if ($requestedlength > $allowedlength) {
             $end = min($duration, $start + $allowedlength);
