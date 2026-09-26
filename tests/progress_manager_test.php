@@ -27,7 +27,7 @@ namespace mod_videobook;
 /**
  * Progress manager tests.
  *
- * @covers \\mod_videobook\\progress_manager
+ * @covers \mod_videobook\progress_manager
  */
 final class progress_manager_test extends \advanced_testcase {
     /**
