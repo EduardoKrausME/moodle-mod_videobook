@@ -46,7 +46,7 @@ class backup_videobook_activity_structure_step extends backup_activity_structure
         $progresses = new backup_nested_element('progresses');
         $progress = new backup_nested_element('progress', ['id'], [
             'chapterid', 'userid', 'duration', 'lastposition', 'segments', 'uniquewatched',
-            'percent', 'status', 'timecreated', 'timemodified', 'lastaccess',
+            'percent', 'status', 'timecreated', 'timemodified', 'lastaccess', 'lastheartbeat', 'lastclienttime',
         ]);
 
         $activity->add_child($chapters);
