@@ -76,16 +76,6 @@ if ($chapterid) {
     }
 } else {
     $current = $chaptermanager->choose_default_chapter($chapters, $progress) ?? reset($chapters);
-    if (!$chaptermanager->can_access($activity, $chapters, (int)$current->id, $progress, $canmanage)) {
-        foreach ($chapters as $candidate) {
-            $state = $progress[$candidate->id]->status ?? progress_manager::STATUS_NOTSTARTED;
-            if ((int)$state !== progress_manager::STATUS_COMPLETED &&
-                    $chaptermanager->can_access($activity, $chapters, (int)$candidate->id, $progress, $canmanage)) {
-                $current = $candidate;
-                break;
-            }
-        }
-    }
 }
 
 if (!$chaptermanager->can_access($activity, $chapters, (int)$current->id, $progress, $canmanage)) {
