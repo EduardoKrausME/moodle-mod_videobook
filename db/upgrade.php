@@ -29,6 +29,9 @@
  * @return bool
  */
 function xmldb_videobook_upgrade(int $oldversion): bool {
+    global $DB;
+
+    $dbman = $DB->get_manager();
 
     if ($oldversion < 2026092601) {
         $table = new xmldb_table('videobook_progress');
