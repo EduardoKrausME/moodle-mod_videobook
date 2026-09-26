@@ -173,6 +173,61 @@ final class progress_manager_test extends \advanced_testcase {
         $this->assertEqualsWithDelta(40.0, (float)$progress->lastposition, 0.001);
     }
 
+
+    /**
+     * Opening a chapter can be its explicit completion criterion.
+     */
+    public function test_view_completion_marks_chapter_complete(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$activity, $chapter, $user] = $this->create_records();
+        $chapter->completiontype = 'view';
+        $DB->update_record('videobook_chapters', $chapter);
+
+        $manager = new progress_manager();
+        $progress = $manager->visit_chapter($activity, $chapter, $user->id);
+
+        $this->assertSame(progress_manager::STATUS_COMPLETED, (int)$progress->status);
+        $this->assertEqualsWithDelta(100.0, (float)$progress->percent, 0.001);
+    }
+
+    /**
+     * A manual video chapter must not auto-complete even after all video is watched.
+     */
+    public function test_manual_completion_requires_explicit_action(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$activity, $chapter, $user] = $this->create_records();
+        $chapter->completiontype = 'manual';
+        $DB->update_record('videobook_chapters', $chapter);
+
+        $manager = new progress_manager();
+        $record = $manager->touch($activity->id, $chapter->id, $user->id);
+        $record->lastheartbeat = time() - 20;
+        $record->lastclienttime = 500;
+        $DB->update_record('videobook_progress', $record);
+
+        $progress = $manager->update_video_progress(
+            $activity,
+            $chapter,
+            $user->id,
+            10.0,
+            10.0,
+            0.0,
+            10.0,
+            1.0,
+            501
+        );
+
+        $this->assertEqualsWithDelta(100.0, (float)$progress->percent, 0.001);
+        $this->assertNotEquals(progress_manager::STATUS_COMPLETED, (int)$progress->status);
+
+        $progress = $manager->complete_text_chapter($activity, $chapter, $user->id);
+        $this->assertSame(progress_manager::STATUS_COMPLETED, (int)$progress->status);
+    }
+
     /**
      * Small media-duration corrections may move in either direction.
      */

@@ -224,3 +224,5 @@ $string['stoppedat'] = 'Parou em {$a}';
 $string['structuredresources'] = 'Materiais estruturados da aula';
 $string['transcript'] = 'Transcrição';
 $string['transcript_help'] = 'Transcrição nativa da aula. Pode conter texto formatado, links e arquivos incorporados e participa da busca dentro do Video Book.';
+
+$string['errormaxfiles'] = 'Apenas um arquivo pode ser enviado.';

@@ -70,14 +70,24 @@ if ($data = $form->get_data()) {
             $row[$header] = trim((string)($values[$index] ?? ''));
         }
         if (($row['title'] ?? '') !== '') {
+            $row['_rowindex'] = count($rows);
             $rows[] = $row;
         }
     }
     fclose($handle);
 
-    usort($rows, static fn(array $a, array $b): int =>
-        ((int)($a['order'] ?? 0)) <=> ((int)($b['order'] ?? 0))
+    $hasexplicitorder = (bool)array_filter($rows, static fn(array $row): bool =>
+        isset($row['order']) && $row['order'] !== ''
     );
+    if ($hasexplicitorder) {
+        usort($rows, static function(array $a, array $b): int {
+            $aorder = isset($a['order']) && $a['order'] !== '' ? (int)$a['order'] : PHP_INT_MAX;
+            $border = isset($b['order']) && $b['order'] !== '' ? (int)$b['order'] : PHP_INT_MAX;
+            return $aorder === $border
+                ? ((int)$a['_rowindex'] <=> (int)$b['_rowindex'])
+                : ($aorder <=> $border);
+        });
+    }
 
     $manager = new chapter_manager();
     $count = 0;
