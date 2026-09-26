@@ -142,6 +142,15 @@ class chapter_form extends moodleform {
                 }
             }
         }
+
+        $captionsdraftid = (int)($data['captions'] ?? 0);
+        if ($captionsdraftid > 0) {
+            $draftinfo = file_get_draft_area_info($captionsdraftid);
+            if ((int)$draftinfo['filecount'] > 10) {
+                $errors['captions'] = get_string('errormaxfiles', 'videobook');
+            }
+        }
+
         return $errors;
     }
 }
