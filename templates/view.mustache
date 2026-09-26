@@ -103,8 +103,16 @@
             {{#hasattachments}}
                 <section class="videobook-resources">
                     <h4>{{#str}}attachments, videobook{{/str}}</h4>
-                    <ul>{{#attachments}}
-                        <li><a href="{{{url}}}">{{name}}</a></li>{{/attachments}}</ul>
+                    <ul class="list-unstyled mb-0">
+                        {{#attachments}}
+                            <li class="d-flex align-items-center justify-content-between gap-3 py-2 border-bottom">
+                                <a class="text-break" href="{{{url}}}">{{name}}</a>
+                                <a class="btn btn-sm btn-outline-secondary flex-shrink-0" href="{{{url}}}" download>
+                                    {{#str}}download{{/str}}
+                                </a>
+                            </li>
+                        {{/attachments}}
+                    </ul>
                 </section>
             {{/hasattachments}}
 
