@@ -85,6 +85,8 @@ class progress_manager {
                 'timecreated' => $now,
                 'timemodified' => $now,
                 'lastaccess' => $now,
+                'lastheartbeat' => 0,
+                'lastclienttime' => 0,
             ];
             $record->id = $DB->insert_record('videobook_progress', $record);
         } else {
@@ -108,27 +110,64 @@ class progress_manager {
      * @param float $currentposition Current position.
      * @param float $segmentstart Segment start.
      * @param float $segmentend Segment end.
+     * @param float $playbackrate Playback rate reported by the player.
+     * @param int $clienttime Monotonic client event time.
      * @return stdClass
      * @throws \dml_exception
      */
     public function update_video_progress(stdClass $activity, stdClass $chapter, int $userid, float $duration,
-                                          float $currentposition, float $segmentstart, float $segmentend): stdClass {
+                                          float $currentposition, float $segmentstart, float $segmentend,
+                                          float $playbackrate = 1.0, int $clienttime = 0): stdClass {
         global $DB;
+
         $record = $this->touch((int)$activity->id, (int)$chapter->id, $userid);
-        $duration = max((float)$record->duration, min(86400, max(0, $duration)));
-        if ($duration <= 0) {
+        $now = time();
+        $clienttime = $clienttime > 0 ? $clienttime : $now;
+
+        // Ignore duplicated or out-of-order payloads. Their watched interval has either
+        // already been applied or belongs to an older player state and must not move
+        // the resume position backwards.
+        if (!empty($record->lastclienttime) && $clienttime <= (int)$record->lastclienttime) {
+            $record->trackingreason = 'stale';
             return $record;
         }
-        $start = max(0, min($duration, min($segmentstart, $segmentend)));
-        $end = max(0, min($duration, max($segmentstart, $segmentend)));
-        if ($end - $start > 60) {
-            $end = $start + 60;
+
+        $reported = min(86400.0, max(0.0, $duration));
+        $floor = max(0.0, $currentposition, $segmentstart, $segmentend, $this->max_watched_position($record));
+        $duration = $this->normalise_duration((float)$record->duration, $reported, $floor);
+        if ($duration <= 0) {
+            $record->lastheartbeat = $now;
+            $record->lastclienttime = $clienttime;
+            $record->timemodified = $now;
+            $record->lastaccess = $now;
+            $DB->update_record('videobook_progress', $record);
+            $record->trackingreason = 'accepted';
+            return $record;
         }
+
+        $start = max(0.0, min($duration, min($segmentstart, $segmentend)));
+        $end = max(0.0, min($duration, max($segmentstart, $segmentend)));
+        $requestedlength = max(0.0, $end - $start);
+
+        // Progress is bounded by server wall-clock time. A modified browser may report
+        // arbitrary media positions, but it cannot manufacture minutes of watched
+        // content in a few seconds by repeatedly calling the web service.
+        $rate = min(4.0, max(0.25, $playbackrate));
+        $reference = !empty($record->lastheartbeat) ? (int)$record->lastheartbeat : (int)$record->timecreated;
+        $elapsed = max(0, min(90, $now - $reference));
+        $allowedlength = min(60.0, ($elapsed * $rate) + 3.0);
+        $trackingreason = 'accepted';
+        if ($requestedlength > $allowedlength) {
+            $end = min($duration, $start + $allowedlength);
+            $trackingreason = 'ratecapped';
+        }
+
         $segments = $this->decode_segments((string)$record->segments);
         if ($end > $start + 0.1) {
             $segments[] = [$start, $end];
         }
         $segments = $this->merge_segments($segments, $duration);
+
         $unique = 0.0;
         foreach ($segments as [$a, $b]) {
             $unique += max(0, $b - $a);
@@ -142,11 +181,40 @@ class progress_manager {
         $record->percent = $percent;
         $record->status = $percent + 0.0001 >= (int)$chapter->minimumpercent
             ? self::STATUS_COMPLETED : self::STATUS_INPROGRESS;
-        $record->timemodified = time();
-        $record->lastaccess = $record->timemodified;
+        $record->lastheartbeat = $now;
+        $record->lastclienttime = $clienttime;
+        $record->timemodified = $now;
+        $record->lastaccess = $now;
         $DB->update_record('videobook_progress', $record);
         $this->update_completion($activity, $userid);
+        $record->trackingreason = $trackingreason;
         return $record;
+    }
+
+    /**
+     * Stabilise duration without permanently locking an early inaccurate reading.
+     *
+     * Small corrections in either direction are accepted. Large decreases are
+     * rejected because they could turn a short forged duration into instant
+     * completion. The duration can never be below observed positions.
+     *
+     * @param float $stored Stored duration.
+     * @param float $reported Newly reported duration.
+     * @param float $floor Lowest possible duration from observed positions.
+     * @return float
+     */
+    private function normalise_duration(float $stored, float $reported, float $floor): float {
+        if ($stored <= 0) {
+            return max($reported, $floor);
+        }
+        if ($reported <= 0) {
+            return max($stored, $floor);
+        }
+        $tolerance = max(5.0, $stored * 0.05);
+        if (abs($reported - $stored) <= $tolerance) {
+            return max($reported, $floor);
+        }
+        return max($stored, $reported, $floor);
     }
 
     /**
