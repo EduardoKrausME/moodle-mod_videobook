@@ -61,7 +61,7 @@ function videobook_supports($feature) {
  * @return int
  */
 function videobook_add_instance(stdClass $data, ?mod_videobook_mod_form $mform = null): int {
-    global $DB, $USER;
+    global $DB;
     $data->timecreated = time();
     $data->timemodified = $data->timecreated;
     return $DB->insert_record('videobook', $data);
@@ -129,7 +129,7 @@ function videobook_delete_instance(int $id): bool {
  */
 function mod_videobook_pluginfile($course, $cm, $context, string $filearea, array $args,
                                   bool $forcedownload, array $options = []): bool {
-    global $DB;
+    global $DB, $USER;
 
     $allowedareas = ['video', 'image', 'attachments', 'captions', 'content', 'transcript', 'resource'];
     if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, $allowedareas, true)) {
