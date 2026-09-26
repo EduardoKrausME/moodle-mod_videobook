@@ -49,11 +49,25 @@ class chapter_form extends moodleform {
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
 
+        $mform->addElement('text', 'sectiontitle', get_string('sectiontitle', 'videobook'), ['size' => 64]);
+        $mform->setType('sectiontitle', PARAM_TEXT);
+        $mform->addHelpButton('sectiontitle', 'sectiontitle', 'videobook');
+
+        $mform->addElement('selectyesno', 'visible', get_string('chaptervisible', 'videobook'));
+        $mform->setDefault('visible', 1);
+
         $mform->addElement('editor', 'content_editor', get_string('chaptertext', 'videobook'), null, [
             'maxfiles' => -1,
             'noclean' => false,
             'context' => $context,
         ]);
+
+        $mform->addElement('editor', 'transcript_editor', get_string('transcript', 'videobook'), null, [
+            'maxfiles' => -1,
+            'noclean' => false,
+            'context' => $context,
+        ]);
+        $mform->addHelpButton('transcript_editor', 'transcript', 'videobook');
 
         $mform->addElement('select', 'videosource', get_string('videosource', 'videobook'), [
             'none' => get_string('sourcenone', 'videobook'),
@@ -76,11 +90,30 @@ class chapter_form extends moodleform {
         $mform->setType('videourl', PARAM_URL);
         $mform->hideIf('videourl', 'videosource', 'in', ['none', 'upload']);
 
+        $mform->addElement('select', 'completiontype', get_string('completiontype', 'videobook'), [
+            'view' => get_string('completionview', 'videobook'),
+            'percent' => get_string('completionpercent', 'videobook'),
+            'ended' => get_string('completionended', 'videobook'),
+            'manual' => get_string('completionmanual', 'videobook'),
+            'percent_or_manual' => get_string('completionpercentormanual', 'videobook'),
+        ]);
+        $mform->setDefault('completiontype', 'percent');
+        $mform->addHelpButton('completiontype', 'completiontype', 'videobook');
+
         $mform->addElement('text', 'minimumpercent', get_string('minimumpercent', 'videobook'), ['size' => 5]);
         $mform->setType('minimumpercent', PARAM_INT);
         $mform->setDefault('minimumpercent', 80);
         $mform->addHelpButton('minimumpercent', 'minimumpercent', 'videobook');
-        $mform->hideIf('minimumpercent', 'videosource', 'eq', 'none');
+        $mform->hideIf('minimumpercent', 'completiontype', 'notin', ['percent', 'percent_or_manual']);
+
+        $mform->addElement('select', 'contentorder', get_string('contentorder', 'videobook'), [
+            'video_content_transcript_resources' => get_string('ordervideocontenttranscriptresources', 'videobook'),
+            'video_resources_content_transcript' => get_string('ordervideoresourcescontenttranscript', 'videobook'),
+            'video_transcript_content_resources' => get_string('ordervideotranscriptcontentresources', 'videobook'),
+            'content_video_transcript_resources' => get_string('ordercontentvideotranscriptresources', 'videobook'),
+        ]);
+        $mform->setDefault('contentorder', 'video_content_transcript_resources');
+        $mform->addHelpButton('contentorder', 'contentorder', 'videobook');
 
         $mform->addElement('filemanager', 'captions', get_string('captions', 'videobook'), null, [
             'subdirs' => 0,
@@ -127,11 +160,15 @@ class chapter_form extends moodleform {
         if (in_array($source, ['url', 'youtube', 'vimeo'], true) && empty($data['videourl'])) {
             $errors['videourl'] = get_string('required');
         }
-        if ($source !== 'none') {
+        $completiontype = (string)($data['completiontype'] ?? 'percent');
+        if (in_array($completiontype, ['percent', 'percent_or_manual'], true)) {
             $minimumpercent = (int)($data['minimumpercent'] ?? 0);
             if ($minimumpercent < 1 || $minimumpercent > 100) {
                 $errors['minimumpercent'] = get_string('invalidpercentage', 'videobook');
             }
+        }
+        if ($source === 'none' && in_array($completiontype, ['percent', 'ended', 'percent_or_manual'], true)) {
+            $errors['completiontype'] = get_string('completionrequiresvideo', 'videobook');
         }
         foreach (['videofile', 'chapterimage'] as $field) {
             $draftid = (int)($data[$field] ?? 0);

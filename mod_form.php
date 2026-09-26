@@ -63,6 +63,13 @@ class mod_videobook_mod_form extends moodleform_mod {
         $mform->setDefault('allowseek', 1);
         $mform->addHelpButton('allowseek', 'allowseek', 'videobook');
 
+        $mform->addElement('select', 'layoutmode', get_string('layoutmode', 'videobook'), [
+            'tabs' => get_string('layouttabs', 'videobook'),
+            'continuous' => get_string('layoutcontinuous', 'videobook'),
+        ]);
+        $mform->setDefault('layoutmode', 'tabs');
+        $mform->addHelpButton('layoutmode', 'layoutmode', 'videobook');
+
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
     }
