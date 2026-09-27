@@ -60,7 +60,7 @@ function xmldb_videobook_upgrade(int $oldversion): bool {
         $fields = [
             new xmldb_field('transcript', XMLDB_TYPE_TEXT, null, null, null, null, null, 'contentformat'),
             new xmldb_field('transcriptformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'transcript'),
-            new xmldb_field('sectiontitle', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'transcriptformat'),
+            new xmldb_field('sectiontitle', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, '', 'transcriptformat'),
             new xmldb_field('completiontype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'percent', 'linksjson'),
             new xmldb_field('contentorder', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null,
                 'video_content_transcript_resources', 'completiontype'),
@@ -71,6 +71,21 @@ function xmldb_videobook_upgrade(int $oldversion): bool {
                 $dbman->add_field($table, $field);
             }
         }
+
+        // A temporary empty-string default is required while adding a NOT NULL field to populated tables.
+        // Remove it afterwards so upgraded installations match install.xml.
+        $sectiontitlefield = new xmldb_field(
+            'sectiontitle',
+            XMLDB_TYPE_CHAR,
+            '255',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            null,
+            'transcriptformat'
+        );
+        $dbman->change_field_default($table, $sectiontitlefield);
+
         $DB->execute("UPDATE {videobook_chapters} SET completiontype = 'manual' WHERE videosource = 'none'");
 
         $table = new xmldb_table('videobook_resources');
@@ -93,6 +108,10 @@ function xmldb_videobook_upgrade(int $oldversion): bool {
         }
 
         upgrade_mod_savepoint(true, 2026092602, 'videobook');
+    }
+
+    if ($oldversion < 2026092603) {
+        upgrade_mod_savepoint(true, 2026092603, 'videobook');
     }
 
     return true;

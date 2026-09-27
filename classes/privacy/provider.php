@@ -109,11 +109,19 @@ class provider implements
             foreach ($records as $record) {
                 $export[] = (object)[
                     'chapterid' => $record->chapterid,
+                    'duration' => $record->duration,
+                    'lastposition' => $record->lastposition,
+                    'segments' => $record->segments,
+                    'uniquewatched' => $record->uniquewatched,
                     'percent' => $record->percent,
                     'status' => $record->status,
-                    'lastposition' => $record->lastposition,
-                    'uniquewatched' => $record->uniquewatched,
                     'lastaccess' => transform::datetime($record->lastaccess),
+                    'lastheartbeat' => $record->lastheartbeat
+                        ? transform::datetime($record->lastheartbeat)
+                        : null,
+                    'lastclienttime' => $record->lastclienttime
+                        ? transform::datetime($record->lastclienttime)
+                        : null,
                 ];
             }
             writer::with_context($context)->export_data([get_string('privacy:progresspath', 'videobook')], (object)[

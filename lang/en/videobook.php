@@ -62,7 +62,6 @@ $string['completionmanual'] = 'Mark manually as completed';
 $string['completionpercent'] = 'Watch a percentage of the video';
 $string['completionpercentormanual'] = 'Watch the percentage or mark manually';
 $string['completionrequiresvideo'] = 'This completion rule requires a video.';
-$string['completionrules'] = '';
 $string['completiontype'] = 'Chapter completion';
 $string['completiontype_help'] = 'Defines when this chapter is considered completed. The rule also controls sequential unlocking when sequential navigation is enabled.';
 $string['completionview'] = 'Open the chapter';

@@ -84,6 +84,22 @@ if ($chapterid) {
     }
 } else {
     $current = $chaptermanager->choose_default_chapter($chapters, $progress) ?? reset($chapters);
+    if (!$chaptermanager->can_access($activity, $chapters, (int)$current->id, $progress, $canmanage)) {
+        foreach ($chapters as $candidate) {
+            $state = $progress[$candidate->id]->status ?? progress_manager::STATUS_NOTSTARTED;
+            if ((int)$state !== progress_manager::STATUS_COMPLETED &&
+                    $chaptermanager->can_access(
+                        $activity,
+                        $chapters,
+                        (int)$candidate->id,
+                        $progress,
+                        $canmanage
+                    )) {
+                $current = $candidate;
+                break;
+            }
+        }
+    }
 }
 
 if (!$chaptermanager->can_access($activity, $chapters, (int)$current->id, $progress, $canmanage)) {
@@ -127,7 +143,7 @@ foreach ($chapters as $index => $chapter) {
     $record = $progress[(int)$chapter->id] ?? null;
     $status = $record ? (int)$record->status : progress_manager::STATUS_NOTSTARTED;
     $accessible = $chaptermanager->can_access($activity, $chapters, (int)$chapter->id, $progress, $canmanage);
-    $imageurl = $chaptermanager->get_chapter_image_url($chapter, $context);
+    $imageurl = $accessible ? $chaptermanager->get_chapter_image_url($chapter, $context) : '';
     $statusicon = $accessible ? match ($status) {
         progress_manager::STATUS_COMPLETED => '✓',
         progress_manager::STATUS_INPROGRESS => '▶',

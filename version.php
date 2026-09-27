@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_videobook';
-$plugin->version = 2026092602;
-$plugin->release = '1.1.0';
+$plugin->version = 2026092603;
+$plugin->release = '1.1.1';
 $plugin->requires = 2024100700;
 $plugin->maturity = MATURITY_STABLE;
