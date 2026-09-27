@@ -62,14 +62,14 @@ if ($data = $form->get_data()) {
     $firstline = fgets($handle);
     rewind($handle);
     $delimiter = substr_count((string)$firstline, ';') > substr_count((string)$firstline, ',') ? ';' : ',';
-    $headers = fgetcsv($handle, 0, $delimiter);
+    $headers = fgetcsv($handle, 0, $delimiter, '"', '');
     $headers = array_map(static fn($value) => strtolower(trim((string)$value)), $headers ?: []);
     if (!in_array('title', $headers, true)) {
         throw new moodle_exception('csvtitlemissing', 'videobook');
     }
 
     $rows = [];
-    while (($values = fgetcsv($handle, 0, $delimiter)) !== false) {
+    while (($values = fgetcsv($handle, 0, $delimiter, '"', '')) !== false) {
         if (!array_filter($values, static fn($value) => trim((string)$value) !== '')) {
             continue;
         }
@@ -120,6 +120,10 @@ if ($data = $form->get_data()) {
             $completion = 'manual';
         }
 
+        $minimumpercent = isset($row['minimum_percent']) && $row['minimum_percent'] !== ''
+            ? (int)$row['minimum_percent']
+            : 80;
+
         $record = (object)[
             'videobookid' => $activity->id,
             'title' => $row['title'],
@@ -131,7 +135,7 @@ if ($data = $form->get_data()) {
             'videosource' => $source,
             'videourl' => $videourl,
             'completiontype' => $completion,
-            'minimumpercent' => (int)($row['minimum_percent'] ?? 80),
+            'minimumpercent' => $minimumpercent,
             'contentorder' => 'video_content_transcript_resources',
             'links' => $row['links'] ?? '',
         ];
