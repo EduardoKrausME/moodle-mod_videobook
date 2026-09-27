@@ -114,5 +114,9 @@ function xmldb_videobook_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092603, 'videobook');
     }
 
+    if ($oldversion < 2026092604) {
+        upgrade_mod_savepoint(true, 2026092604, 'videobook');
+    }
+
     return true;
 }

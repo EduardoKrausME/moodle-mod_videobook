@@ -70,6 +70,16 @@ class restore_videobook_activity_structure_step extends restore_activity_structu
         $data = (object)$data;
         $oldid = $data->id;
         $data->videobookid = $this->get_new_parentid('videobook');
+
+        // Backups created before 1.1 do not contain the structured-lesson fields.
+        $data->sectiontitle = $data->sectiontitle ?? '';
+        $data->transcript = $data->transcript ?? null;
+        $data->transcriptformat = $data->transcriptformat ?? FORMAT_HTML;
+        $data->completiontype = $data->completiontype ??
+            (($data->videosource ?? 'none') === 'none' ? 'manual' : 'percent');
+        $data->contentorder = $data->contentorder ?? 'video_content_transcript_resources';
+        $data->visible = $data->visible ?? 1;
+
         $data->id = $DB->insert_record('videobook_chapters', $data);
         $this->set_mapping('videobook_chapter', $oldid, $data->id, true);
     }
