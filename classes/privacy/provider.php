@@ -28,6 +28,7 @@ use context;
 use context_module;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
@@ -192,10 +193,10 @@ class provider implements
     /**
      * Delete data for users in a context.
      *
-     * @param userlist $userlist User list.
+     * @param approved_userlist $userlist Approved user list.
      * @return void
      */
-    public static function delete_data_for_users(userlist $userlist): void {
+    public static function delete_data_for_users(approved_userlist $userlist): void {
         global $DB;
         $context = $userlist->get_context();
         if (!$context instanceof context_module) {
