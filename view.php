@@ -330,8 +330,8 @@ if ($searchquery !== '') {
         $plain = trim(preg_replace('/\s+/', ' ', strip_tags(
             (string)$chapter->content . ' ' . (string)$chapter->transcript
         )));
-        if (core_text::strlen($plain) > 180) {
-            $plain = core_text::substr($plain, 0, 177) . '...';
+        if (strlen($plain) > 180) {
+            $plain = substr($plain, 0, 177) . '...';
         }
         $searchresults[] = [
             'title' => format_string($chapter->title),
